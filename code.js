@@ -2,10 +2,11 @@
 var gridWidth = 3;
 var gridHeight = 3;
 
-var radius = 88 / Math.max(6, Math.max(gridWidth, gridHeight));
-var spacing = 800 / (Math.max(gridWidth, gridHeight) + 1);
-var horPadding = (800 - spacing * (gridWidth - 1)) / 2;
-var verPadding = (800 - spacing * (gridHeight - 1)) / 2;
+var radius;
+var spacing;
+var horPadding;
+var verPadding;
+calculateMetrics();
 
 // Types
 var NODE_TYPE = {
@@ -82,6 +83,13 @@ function initGrid() {
             }
         }
     }
+}
+
+function calculateMetrics() {
+    radius = 88 / Math.max(6, Math.max(gridWidth, gridHeight));
+    spacing = 800 / (Math.max(gridWidth, gridHeight) + 1);
+    horPadding = (800 - spacing * (gridWidth - 1)) / 2;
+    verPadding = (800 - spacing * (gridHeight - 1)) / 2;
 }
 
 function horEdgeExists(x, y) {
@@ -310,7 +318,7 @@ function addGridEventHandlers() {
 
     $('.node').click(function() {
         if (viewingSolution) return;
-        
+
         var x = +this.getAttribute('data-x');
         var y = +this.getAttribute('data-y');
 
@@ -468,5 +476,34 @@ nodeTypes[2][2] = NODE_TYPE.REQUIRED;
 
 updateVisualGrid();
 
+// Set up UI controls
 $('#solve-button').click(solve);
 $('#clear-button').click(clearSolution);
+
+var gridSizeSelector = $('#grid-size-selector');
+
+for (var x = 1; x <= 5; x++) {
+    for (var y = 1; y <= 5; y++) {
+        var el = $('<option value="' + x + ',' + y + '">' + x + ' x ' + y + '</option>')
+            .appendTo(gridSizeSelector);
+
+        if (x == gridWidth - 1 && y == gridHeight - 1) {
+            el.attr('selected', 'selected');
+        }
+    }
+}
+
+gridSizeSelector.change(function() {
+    var x = +this.value.split(',')[0];
+    var y = +this.value.split(',')[1];
+
+    clearSolution();
+
+    gridWidth = x + 1;
+    gridHeight = y + 1;
+    calculateMetrics();
+
+    initGrid();
+
+    updateVisualGrid();
+});

@@ -4,6 +4,10 @@ body {
     font-size: 20px;
 
     background: black;
+
+    user-select: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
 }
 
 #container {
@@ -18,7 +22,7 @@ svg {
 }
 
 #solve-button {
-    width: 600px;
+    width: 545px;
     height: 50px;
 
     background: #00E94F;
@@ -41,7 +45,7 @@ svg {
 }
 
 #clear-button {
-    width: 195px;
+    width: 145px;
     height: 50px;
 
     background: #E80000;
@@ -61,4 +65,16 @@ svg {
 
 #clear-button:active {
     background: #960000;
+}
+
+#grid-size-selector {
+    width: 100px;
+    height: 50px;
+
+    background: #00A4E5;
+    border: 1px solid #006B96;
+
+    font-family: Roboto;
+    font-weight: 500;
+    font-size: 20px;
 }
