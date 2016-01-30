@@ -19,6 +19,11 @@ so the algorithm is unlikely to more efficient. Most of the effort should
 probably be dedicated to finding heuristics for the bound conditions to reduce
 the depth of the search tree.
 
+### Prefer required neighbour nodes
+
+If multiple unvisited neighbour nodes are available, try visiting the required
+nodes first. This can avoid a lot of dead end solutions early on.
+
 ### Segregation optimization through auxilary required nodes
 
 If differently colored squares are direct neighbours, then the edge between them

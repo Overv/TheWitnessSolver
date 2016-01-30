@@ -386,7 +386,7 @@ function clearSolution() {
     updateVisualGrid();
 }
 
-function getNextNodes(n, visited) {
+function getNextNodes(n, visited, required) {
     var candidates = [];
 
     // Select every connected node that has not yet been visited
@@ -405,6 +405,8 @@ function getNextNodes(n, visited) {
     if (verEdgeExists(n.x, n.y - 1) && !visited.has(node(n.x, n.y - 1))) {
         candidates.push(node(n.x, n.y - 1));
     }
+
+    candidates.sort(function(a, b) { return required.has(b) - required.has(a); });
 
     return candidates;
 }
@@ -591,7 +593,7 @@ function findSolution(path, visited, required) {
         }
 
         // Try all possibles routes from the latest node
-        var candidates = getNextNodes(cn, visited);
+        var candidates = getNextNodes(cn, visited, required);
 
         for (var n of candidates) {
             var newPath = path.slice();
