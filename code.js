@@ -602,30 +602,41 @@ function determineAuxilaryRequired() {
     return aux;
 }
 
-function findSolution(path, visited, required) {
-    if (!required) {
-        required = determineAuxilaryRequired();
+function getNodesByType(type) {
+    var nodes = [];
 
-        for (var x = 0; x < gridWidth; x++) {
-            for (var y = 0; y < gridHeight; y++) {
-                if (nodeTypes[x][y] == NODE_TYPE.REQUIRED) {
-                    required.add(node(x, y));
-                }
+    for (var x = 0; x < gridWidth; x++) {
+        for (var y = 0; y < gridHeight; y++) {
+            if (nodeTypes[x][y] == type) {
+                nodes.push(node(x, y));
             }
         }
     }
 
-    if (!path || path.length == 0) {
-        // If this is the first call, recursively try every starting node
-        for (var x = 0; x < gridWidth; x++) {
-            for (var y = 0; y < gridHeight; y++) {
-                if (nodeTypes[x][y] == NODE_TYPE.START) {
-                    var fullPath = findSolution([node(x, y)], new Set([node(x, y)]), required);
+    return nodes;
+}
 
-                    if (fullPath) {
-                        return fullPath;
-                    }
-                }
+function findSolution(path, visited, required) {
+    if (!required) {
+        required = determineAuxilaryRequired();
+
+        for (var n of getNodesByType(NODE_TYPE.REQUIRED)) {
+            required.add(n);
+        }
+    }
+
+    if (!path || path.length == 0) {
+        // Check if there are any exit nodes
+        if (getNodesByType(NODE_TYPE.EXIT).length == 0) {
+            return false;
+        }
+
+        // If this is the first call, recursively try every starting node
+        for (var n of getNodesByType(NODE_TYPE.START)) {
+            var fullPath = findSolution([n], new Set([n]), required);
+
+            if (fullPath) {
+                return fullPath;
             }
         }
 
