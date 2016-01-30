@@ -19,7 +19,8 @@ var NODE_TYPE = {
 var CELL_TYPE = {
     'NONE': 0,
     'BLACK': 1,
-    'WHITE': 2
+    'WHITE': 2,
+    'TETRIS': 3
 };
 
 // Visual grid definition
@@ -29,6 +30,7 @@ var horEdges = [];
 var verEdges = [];
 var nodeTypes = [];
 var cellTypes = [];
+var cellTetrisLayouts = [];
 
 var viewingSolution = false;
 var highlightedNodes = new Set();
@@ -62,6 +64,7 @@ function initGrid() {
         for (var y = 0; y < gridHeight; y++) {
             if (!nodeTypes[x]) nodeTypes[x] = [];
             if (!cellTypes[x]) cellTypes[x] = [];
+            if (!cellTetrisLayouts[x]) cellTetrisLayouts[x] = [];
             if (!horEdges[x]) horEdges[x] = [];
             if (!verEdges[x]) verEdges[x] = [];
 
@@ -72,6 +75,14 @@ function initGrid() {
 
             if (!lastCol && !lastRow) {
                 cellTypes[x][y] = CELL_TYPE.NONE;
+
+                cellTetrisLayouts[x][y] = [];
+                for (var xx = 0; xx < 4; xx++) {
+                    cellTetrisLayouts[x][y][xx] = [];
+                    for (var yy = 0; yy < 4; yy++) {
+                        cellTetrisLayouts[x][y][xx][yy] = true;
+                    }
+                }
             }
 
             if (!lastCol) {
@@ -138,7 +149,7 @@ function addVisualGridCells() {
                 .css('fill', 'rgba(0, 0, 0, 0)')
                 .appendTo(gridEl);
 
-            if (cellTypes[x][y] != CELL_TYPE.NONE) {
+            if (cellTypes[x][y] == CELL_TYPE.BLACK || cellTypes[x][y] == CELL_TYPE.WHITE) {
                 var iconEl = baseEl.clone()
                     .attr('x', nodeX(x) + spacing / 2 - spacing / 8)
                     .attr('y', nodeY(y) + spacing / 2 - spacing / 8)
@@ -150,6 +161,26 @@ function addVisualGridCells() {
                     iconEl.css('fill', 'rgba(0, 0, 0, 0.9)');
                 } else {
                     iconEl.css('fill', 'white');
+                }
+            } else if (cellTypes[x][y] == CELL_TYPE.TETRIS) {
+                // Draw tetris grid
+                for (var xx = 0; xx < 4; xx++) {
+                    for (var yy = 0; yy < 4; yy++) {
+                        var a = cellTetrisLayouts[x][y][xx][yy] ? '1' : '0';
+
+                        var iconEl = baseEl.clone()
+                            .attr('class', 'tetris-cell')
+                            .attr('data-xx', xx)
+                            .attr('data-yy', yy)
+                            .attr('x', nodeX(x) + (spacing - radius) / 5 * (xx + 1))
+                            .attr('y', nodeY(y) + (spacing - radius) / 5 * (yy + 1))
+                            .attr('width', spacing / 8)
+                            .attr('height', spacing / 8)
+                            .attr('rx', 0)
+                            .attr('ry', 0)
+                            .css('fill', 'rgba(248, 222, 37, ' + a + ')')
+                            .appendTo(gridEl);
+                    }
                 }
             }
         }
@@ -295,7 +326,20 @@ function addGridEventHandlers() {
         var x = +this.getAttribute('data-x');
         var y = +this.getAttribute('data-y');
 
-        cellTypes[x][y] = (cellTypes[x][y] + 1) % 3;
+        cellTypes[x][y] = (cellTypes[x][y] + 1) % 4;
+
+        updateVisualGrid();
+    });
+
+    $('.tetris-cell').click(function() {
+        if (viewingSolution) return;
+
+        var x = +this.getAttribute('data-x');
+        var y = +this.getAttribute('data-y');
+        var xx = +this.getAttribute('data-xx');
+        var yy = +this.getAttribute('data-yy');
+
+        cellTetrisLayouts[x][y][xx][yy] = !cellTetrisLayouts[x][y][xx][yy];
 
         updateVisualGrid();
     });
@@ -527,7 +571,9 @@ function checkSegregation(path) {
 }
 
 function colorsCompatible(c1, c2) {
-    return c1 == CELL_TYPE.NONE || c2 == CELL_TYPE.NONE || c1 == c2;
+    return (c1 != CELL_TYPE.BLACK && c1 != CELL_TYPE.WHITE) ||
+           (c2 != CELL_TYPE.BLACK && c2 == CELL_TYPE.WHITE) ||
+           c1 == c2;
 }
 
 // Auxilary required nodes are an optimization feature for segregation puzzles.
