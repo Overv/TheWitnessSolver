@@ -35,6 +35,5 @@ To do
 -----
 
 - Find the simplest solution (least amount of turns)
-- Solve puzzles with black/white square segregation
 - Solve puzzles with tetris blocks (static and with rotation)
 - Solve other puzzles

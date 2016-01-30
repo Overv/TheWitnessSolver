@@ -1,6 +1,6 @@
 // Configuration
-var gridWidth = 3;
-var gridHeight = 3;
+var gridWidth = 5;
+var gridHeight = 5;
 
 var radius;
 var spacing;
@@ -407,6 +407,10 @@ function getNextNodes(n, visited) {
 }
 
 function checkSolution(path) {
+    return checkRequiredNodes(path) && checkSegregation(path);
+}
+
+function checkRequiredNodes(path) {
     // Check if all required nodes are part of the path
     for (var x = 0; x < gridWidth; x++) {
         for (var y = 0; y < gridHeight; y++) {
@@ -414,6 +418,113 @@ function checkSolution(path) {
                 if (path.indexOf(node(x, y)) == -1) {
                     return false;
                 }
+            }
+        }
+    }
+
+    return true;
+}
+
+// Determine reachable neighbours of each cell based on a proposed path
+function getCellReachabilities(path) {
+    var neighbours = [];
+
+    for (var x = 0; x < gridWidth - 1; x++) {
+        for (var y = 0; y < gridHeight - 1; y++) {
+            neighbours[[x, y]] = new Set();
+
+            if (x > 0) neighbours[[x, y]].add(node(-1, 0));
+            if (x < gridWidth - 2) neighbours[[x, y]].add(node(1, 0));
+            if (y > 0) neighbours[[x, y]].add(node(0, -1));
+            if (y < gridHeight - 2) neighbours[[x, y]].add(node(0, 1));
+        }
+    }
+
+    for (var i = 0; i < path.length; i++) {
+        var cur = path[i];
+        var next = path[i + 1];
+
+        if (next) {
+            if (next.x > cur.x) {
+                if (cur.y > 0) neighbours[[cur.x, cur.y - 1]].delete(node(0, 1));
+                if (cur.y < gridHeight - 1) neighbours[[cur.x, cur.y]].delete(node(0, -1));
+            }
+
+            if (next.x < cur.x) {
+                if (next.y > 0) neighbours[[next.x, next.y - 1]].delete(node(0, 1));
+                if (next.y < gridHeight - 1) neighbours[[next.x, next.y]].delete(node(0, -1));
+            }
+
+            if (next.y > cur.y) {
+                if (cur.x > 0) neighbours[[cur.x - 1, cur.y]].delete(node(1, 0));
+                if (cur.x < gridWidth - 1) neighbours[[cur.x, cur.y]].delete(node(-1, 0));
+            }
+
+            if (next.y < cur.y) {
+                if (next.x > 0) neighbours[[next.x - 1, next.y]].delete(node(1, 0));
+                if (next.x < gridWidth - 1) neighbours[[next.x, next.y]].delete(node(-1, 0));
+            }
+        }
+    }
+
+    return neighbours;
+}
+
+function checkSegregation(path) {
+    // Segregation of black and white squares is checked using flood fill
+    var visited = new Set();
+    var remaining = new Set();
+    var cellCount = (gridWidth - 1) * (gridHeight - 1);
+
+    for (var x = 0; x < gridWidth - 1; x++) {
+        for (var y = 0; y < gridHeight - 1; y++) {
+            remaining.add(node(x, y));
+        }
+    }
+
+    var cells = getCellReachabilities(path);
+
+    var foo = '';
+    for (var p of path) {
+        foo += '(' + p.x + ', ' + p.y + '), ';
+    }
+    var DEBUG = foo == '(0, 4), (0, 3), (1, 3), (1, 2), (1, 1), (2, 1), (2, 0), (3, 0), (3, 1), (3, 2), (2, 2), (2, 3), (3, 3), (3, 4), ';
+
+    // Color of current area and cells in it left to visit
+    var areaColor = CELL_TYPE.NONE;
+    var visitList = [node(0, 0)];
+
+    while (visited.size != cellCount) {
+        var n = visitList.shift();
+        visited.add(n);
+        remaining.delete(n);
+
+        // Check how current cell compares to other cells we've seen in the same
+        // continuous area so far
+        var currentColor = cellTypes[n.x][n.y];
+        if (areaColor != CELL_TYPE.NONE && currentColor != CELL_TYPE.NONE && areaColor != currentColor) {
+            return false;
+        } else if (areaColor == CELL_TYPE.NONE) {
+            // First cell with a color in this area
+            areaColor = cellTypes[n.x][n.y];
+        }
+
+        // Add reachable neighbours we haven't visited yet
+        for (var relPos of cells[[n.x, n.y]]) {
+            var neighbour = node(n.x + relPos.x, n.y + relPos.y);
+
+            if (!visited.has(neighbour)) {
+                visitList.push(neighbour);
+            }
+        }
+
+        // Finished inspecting this area, select a new unvisited node - if any
+        if (visitList.length == 0) {
+            for (var n of remaining.values()) {
+                areaColor = CELL_TYPE.NONE;
+                visitList = [n];
+
+                break;
             }
         }
     }
@@ -469,10 +580,21 @@ function findSolution(path, visited) {
 initGrid();
 
 // Load sample puzzle (starting area)
-nodeTypes[0][2] = NODE_TYPE.START;
-nodeTypes[2][0] = NODE_TYPE.EXIT;
-nodeTypes[0][0] = NODE_TYPE.REQUIRED;
-nodeTypes[2][2] = NODE_TYPE.REQUIRED;
+nodeTypes[0][4] = NODE_TYPE.START;
+nodeTypes[3][4] = NODE_TYPE.EXIT;
+
+cellTypes[1][0] = CELL_TYPE.BLACK;
+cellTypes[2][0] = CELL_TYPE.WHITE;
+cellTypes[3][0] = CELL_TYPE.BLACK;
+cellTypes[0][1] = CELL_TYPE.BLACK;
+cellTypes[3][1] = CELL_TYPE.BLACK;
+cellTypes[0][2] = CELL_TYPE.BLACK;
+cellTypes[1][2] = CELL_TYPE.WHITE;
+cellTypes[2][2] = CELL_TYPE.BLACK;
+cellTypes[0][3] = CELL_TYPE.WHITE;
+cellTypes[1][3] = CELL_TYPE.WHITE;
+cellTypes[2][3] = CELL_TYPE.WHITE;
+cellTypes[3][3] = CELL_TYPE.BLACK;
 
 updateVisualGrid();
 
