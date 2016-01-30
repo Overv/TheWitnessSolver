@@ -337,7 +337,10 @@ function addGridEventHandlers() {
 
 function solve() {
     // Search for solution using branch and bound algorithm
+    var start = +new Date();
     var path = findSolution();
+    var end = +new Date();
+    console.log('solving took ' + (end - start) + ' ms');
 
     if (path) {
         // Do it in updateVisualGrid instead and mark edges as selected (draw those later)
@@ -406,19 +409,15 @@ function getNextNodes(n, visited) {
     return candidates;
 }
 
-function checkSolution(path) {
-    return checkRequiredNodes(path) && checkSegregation(path);
+function checkSolution(path, required) {
+    return checkRequiredNodes(path, required) && checkSegregation(path);
 }
 
-function checkRequiredNodes(path) {
+function checkRequiredNodes(path, required) {
     // Check if all required nodes are part of the path
-    for (var x = 0; x < gridWidth; x++) {
-        for (var y = 0; y < gridHeight; y++) {
-            if (nodeTypes[x][y] == NODE_TYPE.REQUIRED) {
-                if (path.indexOf(node(x, y)) == -1) {
-                    return false;
-                }
-            }
+    for (var n of required) {
+        if (path.indexOf(n) == -1) {
+            return false;
         }
     }
 
@@ -484,12 +483,6 @@ function checkSegregation(path) {
 
     var cells = getCellReachabilities(path);
 
-    var foo = '';
-    for (var p of path) {
-        foo += '(' + p.x + ', ' + p.y + '), ';
-    }
-    var DEBUG = foo == '(0, 4), (0, 3), (1, 3), (1, 2), (1, 1), (2, 1), (2, 0), (3, 0), (3, 1), (3, 2), (2, 2), (2, 3), (3, 3), (3, 4), ';
-
     // Color of current area and cells in it left to visit
     var areaColor = CELL_TYPE.NONE;
     var visitList = [node(0, 0)];
@@ -501,8 +494,7 @@ function checkSegregation(path) {
 
         // Check how current cell compares to other cells we've seen in the same
         // continuous area so far
-        var currentColor = cellTypes[n.x][n.y];
-        if (areaColor != CELL_TYPE.NONE && currentColor != CELL_TYPE.NONE && areaColor != currentColor) {
+        if (!colorsCompatible(areaColor, cellTypes[n.x][n.y])) {
             return false;
         } else if (areaColor == CELL_TYPE.NONE) {
             // First cell with a color in this area
@@ -532,13 +524,55 @@ function checkSegregation(path) {
     return true;
 }
 
-function findSolution(path, visited) {
+function colorsCompatible(c1, c2) {
+    return c1 == CELL_TYPE.NONE || c2 == CELL_TYPE.NONE || c1 == c2;
+}
+
+// Auxilary required nodes are an optimization feature for segregation puzzles.
+// It contains the endpoints of each edge between differently colored cells.
+// These edges must be visited for a correct solution and therefore its
+// endpoints are required nodes in the path.
+function determineAuxilaryRequired() {
+    var aux = new Set();
+
+    for (var x = 0; x < gridWidth - 1; x++) {
+        for (var y = 0; y < gridHeight - 1; y++) {
+            // Right side
+            if (x < gridWidth - 2 && !colorsCompatible(cellTypes[x][y], cellTypes[x + 1][y])) {
+                aux.add(node(x + 1, y));
+                aux.add(node(x + 1, y + 1));
+            }
+
+            // Bottom side
+            if (y < gridHeight - 2 && !colorsCompatible(cellTypes[x][y], cellTypes[x][y + 1])) {
+                aux.add(node(x, y + 1));
+                aux.add(node(x + 1, y + 1));
+            }
+        }
+    }
+
+    return aux;
+}
+
+function findSolution(path, visited, required) {
+    if (!required) {
+        required = determineAuxilaryRequired();
+
+        for (var x = 0; x < gridWidth; x++) {
+            for (var y = 0; y < gridHeight; y++) {
+                if (nodeTypes[x][y] == NODE_TYPE.REQUIRED) {
+                    required.add(node(x, y));
+                }
+            }
+        }
+    }
+
     if (!path || path.length == 0) {
         // If this is the first call, recursively try every starting node
         for (var x = 0; x < gridWidth; x++) {
             for (var y = 0; y < gridHeight; y++) {
                 if (nodeTypes[x][y] == NODE_TYPE.START) {
-                    var fullPath = findSolution([node(x, y)], new Set([node(x, y)]));
+                    var fullPath = findSolution([node(x, y)], new Set([node(x, y)]), required);
 
                     if (fullPath) {
                         return fullPath;
@@ -552,7 +586,7 @@ function findSolution(path, visited) {
         var cn = path[path.length - 1];
 
         // If we're at an exit node, check if the current path is a valid solution
-        if (nodeTypes[cn.x][cn.y] == NODE_TYPE.EXIT && checkSolution(path)) {
+        if (nodeTypes[cn.x][cn.y] == NODE_TYPE.EXIT && checkSolution(path, required)) {
             return path;
         }
 
@@ -566,7 +600,7 @@ function findSolution(path, visited) {
             var newVisited = new Set(visited);
             newVisited.add(n);
 
-            var fullPath = findSolution(newPath, newVisited);
+            var fullPath = findSolution(newPath, newVisited, required);
 
             if (fullPath) {
                 return fullPath;

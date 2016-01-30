@@ -19,6 +19,14 @@ so the algorithm is unlikely to more efficient. Most of the effort should
 probably be dedicated to finding heuristics for the bound conditions to reduce
 the depth of the search tree.
 
+### Segregation optimization through auxilary required nodes
+
+If differently colored squares are direct neighbours, then the edge between them
+**must** be part of the correct solution path. That means that the endpoints of
+that edge are required nodes in the path. By checking for these (extra) required
+nodes in the solution check, the full segregation check doesn't need to run most
+of the time, which saves a lot of time.
+
 Rules
 -----
 
