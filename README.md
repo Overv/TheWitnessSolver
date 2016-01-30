@@ -34,7 +34,6 @@ with both white and black squares
 To do
 -----
 
-- Visually show the solution path
 - Find the simplest solution (least amount of turns)
 - Solve puzzles with black/white square segregation
 - Solve puzzles with tetris blocks (static and with rotation)

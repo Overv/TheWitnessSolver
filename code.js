@@ -29,6 +29,11 @@ var verEdges = [];
 var nodeTypes = [];
 var cellTypes = [];
 
+var viewingSolution = false;
+var highlightedNodes = new Set();
+var highlightedHorEdges = new Set();
+var highlightedVerEdges = new Set();
+
 // Used for keeping track of visited nodes with a Set
 // This requires that a given X,Y node is always the exact same JS object
 var nodePool = [];
@@ -95,7 +100,10 @@ function updateVisualGrid() {
     $('svg').empty();
 
     addVisualGridCells();
-    addVisualGridEdges();
+
+    // Draw highlighted edges over other edges
+    addVisualGridEdges(false);
+    addVisualGridEdges(true);
 
     addVisualGridPoints();
 
@@ -140,11 +148,14 @@ function addVisualGridCells() {
     }
 }
 
-function addVisualGridEdges() {
+function addVisualGridEdges(drawHighlighted) {
     // Set up horizontal edges
     for (var x = 0; x < gridWidth - 1; x++) {
         for (var y = 0; y < gridHeight; y++) {
             var a = horEdges[x][y] ? '1' : '0';
+            var highlighted = highlightedHorEdges.has(node(x, y));
+
+            if (highlighted != drawHighlighted) continue;
 
             $('<rect />')
                 .attr('class', 'edge')
@@ -155,7 +166,7 @@ function addVisualGridEdges() {
                 .attr('y', nodeY(y) - radius)
                 .attr('width', spacing)
                 .attr('height', radius * 2)
-                .css('fill', 'rgba(2, 98, 35, ' + a + ')')
+                .css('fill', highlighted ? '#B1F514' : 'rgba(2, 98, 35, ' + a + ')')
                 .appendTo(gridEl);
         }
     }
@@ -164,6 +175,9 @@ function addVisualGridEdges() {
     for (var x = 0; x < gridWidth; x++) {
         for (var y = 0; y < gridHeight - 1; y++) {
             var a = verEdges[x][y] ? '1' : '0';
+            var highlighted = highlightedVerEdges.has(node(x, y));
+
+            if (highlighted != drawHighlighted) continue;
 
             $('<rect />')
                 .attr('class', 'edge')
@@ -174,7 +188,7 @@ function addVisualGridEdges() {
                 .attr('y', nodeY(y))
                 .attr('width', radius * 2)
                 .attr('height', spacing)
-                .css('fill', 'rgba(2, 98, 35, ' + a + ')')
+                .css('fill', highlighted ? '#B1F514' : 'rgba(2, 98, 35, ' + a + ')')
                 .appendTo(gridEl);
         }
     }
@@ -196,7 +210,7 @@ function addVisualGridPoints() {
                 .attr('cx', nodeX(x))
                 .attr('cy', nodeY(y))
                 .attr('r', radius)
-                .css('fill', '#026223')
+                .css('fill', highlightedNodes.has(node(x, y)) ? '#B1F514' : '#026223')
                 .appendTo(gridEl);
 
             // Extend visualization based on special node types
@@ -219,7 +233,7 @@ function addVisualGridPoints() {
                     .attr('class', 'node')
                     .attr('data-x', x)
                     .attr('data-y', y)
-                    .css('fill', 'black')
+                    .css('fill', highlightedNodes.has(node(x, y)) ? '#B1F514' : 'black')
                     .attr('d', path)
                     .appendTo(gridEl);
             } else if (nodeTypes[x][y] == NODE_TYPE.EXIT) {
@@ -249,7 +263,7 @@ function addVisualGridPoints() {
                     .attr('y', nodeY(y) - radius)
                     .attr('width', radius * 2)
                     .attr('height', radius * 2)
-                    .css('fill', '#026223')
+                    .css('fill', highlightedNodes.has(node(x, y)) ? '#B1F514' : '#026223')
                     .appendTo(parentEl);
 
                 $('<circle />')
@@ -259,7 +273,7 @@ function addVisualGridPoints() {
                     .attr('cx', nodeX(x) - radius * 2)
                     .attr('cy', nodeY(y))
                     .attr('r', radius)
-                    .css('fill', '#026223')
+                    .css('fill', highlightedNodes.has(node(x, y)) ? '#B1F514' : '#026223')
                     .appendTo(parentEl);
             }
         }
@@ -268,6 +282,8 @@ function addVisualGridPoints() {
 
 function addGridEventHandlers() {
     $('.cell').click(function() {
+        if (viewingSolution) return;
+
         var x = +this.getAttribute('data-x');
         var y = +this.getAttribute('data-y');
 
@@ -277,6 +293,8 @@ function addGridEventHandlers() {
     });
 
     $('.edge').click(function() {
+        if (viewingSolution) return;
+
         var type = this.getAttribute('data-type');
         var x = +this.getAttribute('data-x');
         var y = +this.getAttribute('data-y');
@@ -291,6 +309,8 @@ function addGridEventHandlers() {
     });
 
     $('.node').click(function() {
+        if (viewingSolution) return;
+        
         var x = +this.getAttribute('data-x');
         var y = +this.getAttribute('data-y');
 
@@ -309,22 +329,50 @@ function addGridEventHandlers() {
 
 function solve() {
     // Search for solution using branch and bound algorithm
-    // TODO: Pick shortest solution / solution with least corners
     var path = findSolution();
 
     if (path) {
-        var sol = '';
+        // Do it in updateVisualGrid instead and mark edges as selected (draw those later)
+        for (var i = 0; i < path.length; i++) {
+            var cur = path[i];
+            var next = path[i + 1];
 
-        for (var p of path) {
-            sol += '(' + p.x + ', ' + p.y + '), ';
+            // Highlight visited node
+            highlightedNodes.add(node(cur.x, cur.y));
+
+            // Highlight edge to next node
+            if (next) {
+                if (next.x > cur.x) highlightedHorEdges.add(node(cur.x, cur.y));
+                if (next.x < cur.x) highlightedHorEdges.add(node(next.x, next.y));
+                if (next.y > cur.y) highlightedVerEdges.add(node(cur.x, cur.y));
+                if (next.y < cur.y) highlightedVerEdges.add(node(next.x, next.y));
+            }
         }
 
-        sol = sol.substr(0, sol.length - 2);
+        viewingSolution = true;
 
-        console.log('solution: ' + sol);
+        updateVisualGrid();
     } else {
-        console.log('no solution');
+        highlightedNodes.clear();
+        highlightedHorEdges.clear();
+        highlightedVerEdges.clear();
+
+        viewingSolution = false;
+
+        updateVisualGrid();
+
+        alert('No solution!');
     }
+}
+
+function clearSolution() {
+    highlightedNodes.clear();
+    highlightedHorEdges.clear();
+    highlightedVerEdges.clear();
+
+    viewingSolution = false;
+
+    updateVisualGrid();
 }
 
 function getNextNodes(n, visited) {
@@ -421,3 +469,4 @@ nodeTypes[2][2] = NODE_TYPE.REQUIRED;
 updateVisualGrid();
 
 $('#solve-button').click(solve);
+$('#clear-button').click(clearSolution);

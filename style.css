@@ -18,7 +18,7 @@ svg {
 }
 
 #solve-button {
-    width: 100%;
+    width: 600px;
     height: 50px;
 
     background: #00E94F;
@@ -38,4 +38,27 @@ svg {
 
 #solve-button:active {
     background: #00A032;
+}
+
+#clear-button {
+    width: 195px;
+    height: 50px;
+
+    background: #E80000;
+    border: 1px solid #630000;
+
+    font-family: Roboto;
+    font-weight: 500;
+    font-size: 20px;
+
+    outline: none;
+    cursor: pointer;
+}
+
+#clear-button:hover {
+    background: #BC0000;
+}
+
+#clear-button:active {
+    background: #960000;
 }
