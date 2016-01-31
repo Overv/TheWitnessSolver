@@ -1,6 +1,6 @@
 // Configuration
-var gridWidth = 4;
-var gridHeight = 4;
+var gridWidth = 5;
+var gridHeight = 5;
 
 var radius;
 var spacing;
@@ -586,6 +586,7 @@ function checkSegregation(path) {
     // Color of current area and cells in it left to visit
     var areaColor = CELL_TYPE.NONE;
     var visitList = [node(0, 0)];
+    var tetrisArea = 0;
 
     var areas = [[]];
 
@@ -599,9 +600,12 @@ function checkSegregation(path) {
         // continuous area so far
         if (!colorsCompatible(areaColor, cellTypes[n.x][n.y])) {
             return false;
-        } else if (areaColor == CELL_TYPE.NONE) {
-            // First cell with a color in this area
+        } else {
             areaColor = cellTypes[n.x][n.y];
+        }
+
+        if (cellTypes[n.x][n.y] == CELL_TYPE.TETRIS) {
+            tetrisArea += cellTetrisAreas[n.x][n.y];
         }
 
         // Add reachable neighbours we haven't visited yet
@@ -615,9 +619,17 @@ function checkSegregation(path) {
 
         // Finished inspecting this area, select a new unvisited node - if any
         if (visitList.length == 0) {
+            // Check if the tetris blocks could fit within this area in terms of
+            // raw block area, otherwise we can already drop this solution
+            if (tetrisArea > 0 && tetrisArea != areas[areas.length - 1].length) {
+                return false;
+            }
+
             for (var n of remaining.values()) {
                 areaColor = CELL_TYPE.NONE;
                 visitList = [n];
+                tetrisArea = 0;
+
                 areas.push([]);
 
                 break;
@@ -629,11 +641,6 @@ function checkSegregation(path) {
 }
 
 function checkTetris(path, areas) {
-    // Start with some early cheap checks
-    if (!checkTetrisAreas(path, areas)) {
-        return false;
-    }
-
     // For each area, try all possible positions of the tetris blocks contained
     // within and see if they fit (yes, solution verification is NP-complete!)
     for (var area of areas) {
@@ -693,24 +700,6 @@ function findTetrisPlacement(area, cells) {
     }
 
     return false;
-}
-
-function checkTetrisAreas(path, areas) {
-    // Check if the amount of cells in each area matches the amount of tetris blocks
-    for (var area of areas) {
-        var cellCount = area.length;
-        var tetrisCount = 0;
-
-        for (var cell of area) {
-            if (cellTypes[cell.x][cell.y] == CELL_TYPE.TETRIS) {
-                tetrisCount += cellTetrisAreas[cell.x][cell.y];
-            }
-        }
-
-        if (tetrisCount != 0 && tetrisCount != cellCount) return false;
-    }
-
-    return true;
 }
 
 function colorsCompatible(c1, c2) {
@@ -814,6 +803,32 @@ function findSolution(path, visited, required) {
 }
 
 initGrid();
+
+// Sample puzzle from swamp area
+verEdges[2][1] = false;
+nodeTypes[0][4] = NODE_TYPE.START;
+nodeTypes[4][0] = NODE_TYPE.EXIT;
+cellTypes[0][1] = CELL_TYPE.TETRIS;
+cellTypes[1][3] = CELL_TYPE.TETRIS;
+cellTypes[2][3] = CELL_TYPE.TETRIS;
+
+for (var xx = 0; xx < 4; xx++) {
+    for (var yy = 0; yy < 4; yy++) {
+        cellTetrisLayouts[0][1][xx][yy] = false;
+        cellTetrisLayouts[1][3][xx][yy] = false;
+        cellTetrisLayouts[2][3][xx][yy] = false;
+    }
+}
+
+for (var xx = 0; xx < 4; xx++) cellTetrisLayouts[0][1][xx][0] = true;
+for (var yy = 0; yy < 3; yy++) {
+    cellTetrisLayouts[1][3][0][yy] = true;
+    cellTetrisLayouts[2][3][0][yy] = true;
+}
+
+updateTetrisLayoutProperties(0, 1);
+updateTetrisLayoutProperties(1, 3);
+updateTetrisLayoutProperties(2, 3);
 
 updateVisualGrid();
 
