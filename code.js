@@ -41,7 +41,6 @@ var highlightedHorEdges = new Set();
 var highlightedVerEdges = new Set();
 
 var latestPath = [];
-var solutionVerifications = 0;
 
 // Used for keeping track of visited nodes with a Set
 // This requires that a given X,Y node is always the exact same JS object
@@ -425,8 +424,7 @@ function actualSolve(fractionChange) {
         var start = +new Date();
         latestPath = findSolution();
         var end = +new Date();
-        console.log('solving took ' + (end - start) + ' ms and ' + solutionVerifications + ' solution verificiations');
-        solutionVerifications = 0;
+        console.log('solving took ' + (end - start) + ' ms');
     }
 
     highlightedNodes.clear();
@@ -501,20 +499,6 @@ function getNextNodes(n, visited, required) {
     candidates.sort(function(a, b) { return required.has(b) - required.has(a); });
 
     return candidates;
-}
-
-function checkSolution(path, required) {
-    solutionVerifications++;
-
-    if (checkRequiredNodes(path, required)) {
-        var areas = separateAreas(path);
-
-        return checkSegregation(areas) &&
-               checkTetrisAreas(areas) &&
-               checkTetris(areas);
-    }
-
-    return false;
 }
 
 function checkRequiredNodes(path, required) {
@@ -599,86 +583,97 @@ function checkTetrisAreas(areas) {
     return true;
 }
 
-function separateAreas(path) {
+function separateAreasStep(last, cur, areas, segment) {
     // Start with 1 area: the entire grid
-    var areas = [new Set()];
+    if (!areas) {
+        areas = [new Set()];
 
-    for (var x = 0; x < gridWidth - 1; x++) {
-        for (var y = 0; y < gridHeight - 1; y++) {
-            areas[0].add(node(x, y));
+        for (var x = 0; x < gridWidth - 1; x++) {
+            for (var y = 0; y < gridHeight - 1; y++) {
+                areas[0].add(node(x, y));
+            }
         }
+
+        segment = [];
     }
 
-    // Find segments of outer -> inner -> outer nodes in path, because it's
-    // these segments that divide areas
-    var segment = [];
+    // Process new segments
+    if (isOuterNode(last)) {
+        if (segment.length <= 1) {
+            segment = [last];
+        } else {
+            segment.push(last);
 
-    for (var j = 0; j < path.length; j++) {
-        var p = path[j];
-        var pNext = path[j + 1];
+            // Select nodes on the left and on the right of the segment
+            var leftCells = [];
+            var rightCells = new Set();
 
-        if (isOuterNode(p)) {
-            if (segment.length <= 1) {
-                segment = [p];
+            for (var i = 0; i < segment.length - 1; i++) {
+                var segCur = segment[i];
+                var segNext = segment[i + 1];
+
+                var res = getLeftRight(segCur, segNext);
+                leftCells.push(res[0]);
+                rightCells.add(res[1]);
+            }
+
+            segment = [segment[segment.length - 1]];
+
+            // Last area in the list is always the one we're currently in
+            var area = areas.pop();
+
+            // Find full left and right sides using flood fill
+            var visitList = leftCells;
+            leftCells = [];
+
+            while (visitList.length > 0) {
+                var n = visitList.shift();
+
+                if (rightCells.has(n) || !area.has(n)) continue;
+                leftCells.push(n);
+                area.delete(n);
+
+                if (n.x > 0) visitList.push(node(n.x - 1, n.y));
+                if (n.y > 0) visitList.push(node(n.x, n.y - 1));
+                if (n.x < gridWidth - 1) visitList.push(node(n.x + 1, n.y));
+                if (n.y < gridHeight - 1) visitList.push(node(n.x, n.y + 1));
+            }
+
+            // Determine which area the path continues in and add it last
+            var res = getLeftRight(last, cur);
+
+            if (area.has(res[0]) || area.has(res[1])) {
+                areas.push(new Set(leftCells));
+                areas.push(area);
             } else {
-                segment.push(p);
-
-                // Select nodes on the left and on the right of the segment
-                var leftCells = [];
-                var rightCells = new Set();
-
-                for (var i = 0; i < segment.length - 1; i++) {
-                    var cur = segment[i];
-                    var next = segment[i + 1];
-
-                    var res = getLeftRight(cur, next);
-                    leftCells.push(res[0]);
-                    rightCells.add(res[1]);
-                }
-
-                segment = [segment[segment.length - 1]];
-
-                // Last area in the list is always the one we're currently in
-                var area = areas.shift();
-
-                // Find full left and right sides using flood fill
-                var visitList = leftCells;
-                leftCells = [];
-
-                while (visitList.length > 0) {
-                    var n = visitList.shift();
-
-                    if (rightCells.has(n) || !area.has(n)) continue;
-                    leftCells.push(n);
-                    area.delete(n);
-
-                    if (n.x > 0) visitList.push(node(n.x - 1, n.y));
-                    if (n.y > 0) visitList.push(node(n.x, n.y - 1));
-                    if (n.x < gridWidth - 1) visitList.push(node(n.x + 1, n.y));
-                    if (n.y < gridHeight - 1) visitList.push(node(n.x, n.y + 1));
-                }
-
-                // Determine which area the path continues in and add it last
-                if (pNext) {
-                    var res = getLeftRight(p, pNext);
-
-                    if (area.has(res[0]) || area.has(res[1])) {
-                        areas.push(new Set(leftCells));
-                        areas.push(area);
-
-                        continue;
-                    }
-                }
-
                 areas.push(area);
                 areas.push(new Set(leftCells));
             }
-        } else if (segment.length >= 1) {
-            segment.push(p);
+
+            // Run segregation and tetris checks for the second to last area,
+            // which will now no longer change. This allows for early termination.
+            if (!checkArea(areas[areas.length - 2])) {
+                return false;
+            }
+        }
+    } else if (segment.length >= 1) {
+        segment.push(last);
+    }
+
+    // If the current node is an exit node, also check the last area
+    if (nodeTypes[cur.x][cur.y] == NODE_TYPE.EXIT) {
+        if (!checkArea(areas[areas.length - 1])) {
+            return false;
         }
     }
 
-    return areas;
+    return [areas, segment];
+}
+
+function checkArea(area) {
+    return checkSegregation([area]) &&
+           checkTetrisAreas([area]) &&
+           checkTetris([area]);
 }
 
 function checkTetris(areas) {
@@ -789,7 +784,7 @@ function getNodesByType(type) {
     return nodes;
 }
 
-function findSolution(path, visited, required) {
+function findSolution(path, visited, required, areas, segment) {
     if (!required) {
         required = determineAuxilaryRequired();
 
@@ -806,7 +801,7 @@ function findSolution(path, visited, required) {
 
         // If this is the first call, recursively try every starting node
         for (var n of getNodesByType(NODE_TYPE.START)) {
-            var fullPath = findSolution([n], new Set([n]), required);
+            var fullPath = findSolution([n], new Set([n]), required, areas, segment);
 
             if (fullPath) {
                 return fullPath;
@@ -817,8 +812,24 @@ function findSolution(path, visited, required) {
     } else {
         var cn = path[path.length - 1];
 
-        // If we're at an exit node, check if the current path is a valid solution
-        if (nodeTypes[cn.x][cn.y] == NODE_TYPE.EXIT && checkSolution(path, required)) {
+        var res = false;
+        if (path.length >= 2) {
+            var prevn = path[path.length - 2];
+
+            res = separateAreasStep(prevn, cn, areas, segment);
+
+            // Partial solution contains area that is already wrong, abort
+            if (!res) {
+                return false;
+            }
+
+            areas = res[0];
+            segment = res[1];
+        }
+
+        // If we're at an exit node and the partial solution is correct then
+        // this is a correct full solution
+        if (nodeTypes[cn.x][cn.y] == NODE_TYPE.EXIT) {
             return path;
         }
 
@@ -832,7 +843,7 @@ function findSolution(path, visited, required) {
             var newVisited = new Set(visited);
             newVisited.add(n);
 
-            var fullPath = findSolution(newPath, newVisited, required);
+            var fullPath = findSolution(newPath, newVisited, required, copyAreas(areas), (segment || []).slice());
 
             if (fullPath) {
                 return fullPath;
@@ -840,6 +851,14 @@ function findSolution(path, visited, required) {
         }
 
         return false;
+    }
+}
+
+function copyAreas(areas) {
+    if (areas) {
+        return areas.slice().map(function(s) { return new Set(s); });
+    } else {
+        return areas;
     }
 }
 
