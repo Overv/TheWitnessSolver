@@ -778,24 +778,21 @@ function getNodesByType(type) {
     return nodes;
 }
 
-function findSolution(path, visited, required, areas, segment) {
+function findSolution(path, visited, required, exitsRemaining, areas, segment) {
     if (!required) {
         required = determineAuxilaryRequired();
 
         for (var n of getNodesByType(NODE_TYPE.REQUIRED)) {
             required.add(n);
         }
+
+        exitsRemaining = getNodesByType(NODE_TYPE.EXIT).length;
     }
 
     if (!path || path.length == 0) {
-        // Check if there are any exit nodes
-        if (getNodesByType(NODE_TYPE.EXIT).length == 0) {
-            return false;
-        }
-
         // If this is the first call, recursively try every starting node
         for (var n of getNodesByType(NODE_TYPE.START)) {
-            var fullPath = findSolution([n], new Set([n]), required, areas, segment);
+            var fullPath = findSolution([n], new Set([n]), required, exitsRemaining, areas, segment);
 
             if (fullPath) {
                 return fullPath;
@@ -823,9 +820,16 @@ function findSolution(path, visited, required, areas, segment) {
 
         // If we're at an exit node and the partial solution is correct then
         // this is a correct full solution
-        if (nodeTypes[cn.x][cn.y] == NODE_TYPE.EXIT && checkRequiredNodes(path, required)) {
-            return path;
+        if (nodeTypes[cn.x][cn.y] == NODE_TYPE.EXIT) {
+            if (checkRequiredNodes(path, required)) {
+                return path;
+            } else {
+                exitsRemaining--;
+            }
         }
+
+        // If we've run out of exits, abort
+        if (exitsRemaining == 0) return false;
 
         // Try all possibles routes from the latest node
         var candidates = getNextNodes(cn, visited, required);
@@ -837,7 +841,7 @@ function findSolution(path, visited, required, areas, segment) {
             var newVisited = new Set(visited);
             newVisited.add(n);
 
-            var fullPath = findSolution(newPath, newVisited, required, copyAreas(areas), (segment || []).slice());
+            var fullPath = findSolution(newPath, newVisited, required, exitsRemaining, copyAreas(areas), (segment || []).slice());
 
             if (fullPath) {
                 return fullPath;
