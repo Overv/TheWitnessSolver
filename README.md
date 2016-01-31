@@ -4,7 +4,8 @@ The Witness Puzzle Solver (SPOILERS!)
 This is a tool for solving all of the non-environment puzzles in the video game
 [The Witness](http://store.steampowered.com/app/210970/). It provides an
 interface for inputting puzzles similar to the panels in the game. It finds the
-simplest solution and displays it in the grid.
+simplest solution and displays it in the grid. You can also configure the solver
+to only show part of the solution if you just need a hint.
 
 Algorithm
 ---------
@@ -54,7 +55,7 @@ nodes
 - Each area enclosed by the path and the edge of the grid may not contain cells
 with both white and black squares
 - Enclosed areas must have the exact same area as the sum of areas of all tetris
-blocks contained within (which may be `0`)
+blocks contained within (may be `0`)
 
 There are also some rules that are not relevant to puzzles found in the original
 game, but are relevant to this solver's implementation:
@@ -66,5 +67,6 @@ tetris block placement
 To do
 -----
 
+- Improve performance of tetris puzzle solving (chokes on 5x5 swamp puzzles)
 - Solve puzzles with tetris blocks that can be rotated
 - Solve other puzzles

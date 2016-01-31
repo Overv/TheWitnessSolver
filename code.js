@@ -35,9 +35,12 @@ var cellTetrisAreas = [];
 var cellTetrisAnchors = [];
 
 var viewingSolution = false;
+var solutionFraction = 1;
 var highlightedNodes = new Set();
 var highlightedHorEdges = new Set();
 var highlightedVerEdges = new Set();
+
+var latestPath = [];
 
 // Used for keeping track of visited nodes with a Set
 // This requires that a given X,Y node is always the exact same JS object
@@ -404,14 +407,34 @@ function addGridEventHandlers() {
     });
 }
 
-function solve() {
-    // Search for solution using branch and bound algorithm
-    var start = +new Date();
-    var path = findSolution();
-    var end = +new Date();
-    console.log('solving took ' + (end - start) + ' ms');
+function solve(fractionChange) {
+    if (!fractionChange) {
+        $('#solve-button').val('Solving...').prop('disabled', true);
+    }
 
-    if (path) {
+    // Allows browser to redraw button before starting computation
+    setTimeout(function() {
+        actualSolve(fractionChange);
+    }, 0);
+}
+
+function actualSolve(fractionChange) {
+    // Search for solution using branch and bound algorithm
+    if (!fractionChange) {
+        var start = +new Date();
+        latestPath = findSolution();
+        var end = +new Date();
+        console.log('solving took ' + (end - start) + ' ms');
+    }
+
+    highlightedNodes.clear();
+    highlightedHorEdges.clear();
+    highlightedVerEdges.clear();
+
+    if (latestPath) {
+        // If user wants to see a partial solution, cut off the path
+        path = latestPath.slice(0, Math.ceil(latestPath.length * solutionFraction));
+
         // Do it in updateVisualGrid instead and mark edges as selected (draw those later)
         for (var i = 0; i < path.length; i++) {
             var cur = path[i];
@@ -433,16 +456,14 @@ function solve() {
 
         updateVisualGrid();
     } else {
-        highlightedNodes.clear();
-        highlightedHorEdges.clear();
-        highlightedVerEdges.clear();
-
         viewingSolution = false;
 
         updateVisualGrid();
 
         alert('No solution!');
     }
+
+    $('#solve-button').val('Solve').prop('disabled', false);
 }
 
 function clearSolution() {
@@ -794,34 +815,10 @@ function findSolution(path, visited, required) {
 
 initGrid();
 
-// Load sample puzzle (starting area)
-nodeTypes[0][3] = NODE_TYPE.START;
-nodeTypes[3][0] = NODE_TYPE.EXIT;
-
-cellTypes[0][0] = CELL_TYPE.TETRIS;
-cellTypes[0][2] = CELL_TYPE.TETRIS;
-
-for (var xx = 0; xx < 4; xx++) {
-    for (var yy = 0; yy < 4; yy++) {
-        cellTetrisLayouts[0][0][xx][yy] = false;
-        cellTetrisLayouts[0][2][xx][yy] = false;
-    }
-}
-
-cellTetrisLayouts[0][0][0][0] = true;
-cellTetrisLayouts[0][0][1][0] = true;
-updateTetrisLayoutProperties(0, 0);
-
-cellTetrisLayouts[0][2][0][0] = true;
-cellTetrisLayouts[0][2][0][1] = true;
-cellTetrisLayouts[0][2][1][0] = true;
-cellTetrisLayouts[0][2][1][1] = true;
-updateTetrisLayoutProperties(0, 2);
-
 updateVisualGrid();
 
 // Set up UI controls
-$('#solve-button').click(solve);
+$('#solve-button').click(function() { solve(); });
 $('#clear-button').click(clearSolution);
 
 var gridSizeSelector = $('#grid-size-selector');
@@ -832,7 +829,7 @@ for (var x = 1; x <= 5; x++) {
             .appendTo(gridSizeSelector);
 
         if (x == gridWidth - 1 && y == gridHeight - 1) {
-            el.attr('selected', 'selected');
+            el.prop('selected', true);
         }
     }
 }
@@ -850,4 +847,24 @@ gridSizeSelector.change(function() {
     initGrid();
 
     updateVisualGrid();
+});
+
+var hintSizeSelector = $('#hint-size-selector');
+
+for (var i = 100; i >= 10; i -= 10) {
+    if (i == 100) {
+        var el = $('<option value="100">Full solution</option>')
+            .appendTo(hintSizeSelector)
+            .prop('selected', true);
+    } else {
+        hintSizeSelector.append('<option value="' + i + '">' + i + '%</option>');
+    }
+}
+
+hintSizeSelector.change(function() {
+    solutionFraction = +this.value / 100;
+
+    if (viewingSolution) {
+        solve(true);
+    }
 });

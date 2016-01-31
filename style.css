@@ -24,7 +24,7 @@ svg {
 }
 
 #solve-button {
-    width: 545px;
+    width: 410px;
     height: 50px;
 
     background: #00E94F;
@@ -47,7 +47,7 @@ svg {
 }
 
 #clear-button {
-    width: 145px;
+    width: 125px;
     height: 50px;
 
     background: #E80000;
@@ -69,7 +69,7 @@ svg {
     background: #960000;
 }
 
-#grid-size-selector {
+select {
     width: 100px;
     height: 50px;
 
@@ -79,6 +79,10 @@ svg {
     font-family: Roboto;
     font-weight: 500;
     font-size: 20px;
+}
+
+#hint-size-selector {
+    width: 150px;
 }
 
 h1 {
