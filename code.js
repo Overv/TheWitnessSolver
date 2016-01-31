@@ -544,43 +544,39 @@ function getLeftRight(cur, next) {
     }
 }
 
-function checkSegregation(areas) {
-    for (var area of areas) {
-        var color = CELL_TYPE.NONE;
+function checkSegregation(area) {
+    var color = CELL_TYPE.NONE;
 
-        for (var c of area) {
-            if (cellTypes[c.x][c.y] == CELL_TYPE.BLACK || cellTypes[c.x][c.y] == CELL_TYPE.WHITE) {
-                if (!colorsCompatible(color, cellTypes[c.x][c.y])) {
-                    return false;
-                }
-
-                color = cellTypes[c.x][c.y];
+    for (var c of area) {
+        if (cellTypes[c.x][c.y] == CELL_TYPE.BLACK || cellTypes[c.x][c.y] == CELL_TYPE.WHITE) {
+            if (!colorsCompatible(color, cellTypes[c.x][c.y])) {
+                return false;
             }
+
+            color = cellTypes[c.x][c.y];
         }
     }
 
     return true;
 }
 
-function checkTetrisAreas(areas) {
-    for (var area of areas) {
-        var areaCells = 0;
-        var tetrisBlocks = 0;
+function checkTetrisAreas(area) {
+    var areaCells = 0;
+    var tetrisBlocks = 0;
 
-        for (var c of area) {
-            areaCells++;
+    for (var c of area) {
+        areaCells++;
 
-            if (cellTypes[c.x][c.y] == CELL_TYPE.TETRIS) {
-                tetrisBlocks += cellTetrisAreas[c.x][c.y];
-            }
-        }
-
-        if (tetrisBlocks > 0 && tetrisBlocks != areaCells) {
-            return false;
+        if (cellTypes[c.x][c.y] == CELL_TYPE.TETRIS) {
+            tetrisBlocks += cellTetrisAreas[c.x][c.y];
         }
     }
 
-    return true;
+    if (tetrisBlocks > 0 && tetrisBlocks != areaCells) {
+        return false;
+    } else {
+        return true;
+    }
 }
 
 function separateAreasStep(last, cur, areas, segment) {
@@ -671,34 +667,32 @@ function separateAreasStep(last, cur, areas, segment) {
 }
 
 function checkArea(area) {
-    return checkSegregation([area]) &&
-           checkTetrisAreas([area]) &&
-           checkTetris([area]);
+    return checkSegregation(area) &&
+           checkTetrisAreas(area) &&
+           checkTetris(area);
 }
 
-function checkTetris(areas) {
+function checkTetris(area) {
     // For each area, try all possible positions of the tetris blocks contained
     // within and see if they fit (yes, solution verification is NP-complete!)
-    for (var area of areas) {
-        var tetrisCells = [];
+    var tetrisCells = [];
 
-        for (var cell of area) {
-            if (cellTypes[cell.x][cell.y] == CELL_TYPE.TETRIS) {
-                tetrisCells.push(cell);
-            }
-        }
-
-        // Use first-fit decreasing style optimisation
-        tetrisCells.sort(function(a, b) {
-            return cellTetrisAreas[b.x][b.y] - cellTetrisAreas[a.x][a.y];
-        });
-
-        if (!findTetrisPlacement(area, tetrisCells)) {
-            return false;
+    for (var cell of area) {
+        if (cellTypes[cell.x][cell.y] == CELL_TYPE.TETRIS) {
+            tetrisCells.push(cell);
         }
     }
 
-    return true;
+    // Use first-fit decreasing style optimisation
+    tetrisCells.sort(function(a, b) {
+        return cellTetrisAreas[b.x][b.y] - cellTetrisAreas[a.x][a.y];
+    });
+
+    if (!findTetrisPlacement(area, tetrisCells)) {
+        return false;
+    } else {
+        return true;
+    }
 }
 
 // Find a successful placement of tetris blocks specified in [cells] given the
@@ -740,7 +734,7 @@ function findTetrisPlacement(area, cells) {
 
 function colorsCompatible(c1, c2) {
     return (c1 != CELL_TYPE.BLACK && c1 != CELL_TYPE.WHITE) ||
-           (c2 != CELL_TYPE.BLACK && c2 == CELL_TYPE.WHITE) ||
+           (c2 != CELL_TYPE.BLACK && c2 != CELL_TYPE.WHITE) ||
            c1 == c2;
 }
 
@@ -829,7 +823,7 @@ function findSolution(path, visited, required, areas, segment) {
 
         // If we're at an exit node and the partial solution is correct then
         // this is a correct full solution
-        if (nodeTypes[cn.x][cn.y] == NODE_TYPE.EXIT) {
+        if (nodeTypes[cn.x][cn.y] == NODE_TYPE.EXIT && checkRequiredNodes(path, required)) {
             return path;
         }
 
