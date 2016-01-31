@@ -49,6 +49,11 @@ that edge are required nodes in the path. By checking for these (extra) required
 nodes in the solution check, the full segregation check doesn't need to run most
 of the time, which saves a lot of time.
 
+### Terminate a path if finished areas are already wrong
+
+If an area that cannot be revisited already fails the segregation or tetris
+checks then there is no point going on.
+
 Rules
 -----
 
