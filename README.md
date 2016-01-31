@@ -15,9 +15,19 @@ forms a correct solution when it hits an exit node.
 
 Even just verifying a solution for the puzzles with tetris blocks appears to be
 an [NP-complete problem](https://en.wikipedia.org/wiki/Tetris#Computational_complexity)
-so the algorithm is unlikely to more efficient. Most of the effort should
+so the algorithm is unlikely to become more efficient. Most of the effort should
 probably be dedicated to finding heuristics for the bound conditions to reduce
 the depth of the search tree.
+
+This solver does not attempt to find the "simplest" solution, because that would
+require an exhaustive search that eliminates many optimisation opportunities to
+keep the performance reasonable.
+
+Similar to the first-fit decreasing bin packing algorithm, tetris puzzle
+solutions are verified by trying to fit the largest tetris blocks within an area
+first, which allows for detecting nonsensical solutions earlier. Note that
+unlike the bin packing algorithm, all possible combinations will be attempted if
+necessary.
 
 ### Prefer required neighbour nodes
 
@@ -43,10 +53,18 @@ nodes
 - Each node with a black hexagon must be visited
 - Each area enclosed by the path and the edge of the grid may not contain cells
 with both white and black squares
+- Enclosed areas must have the exact same area as the sum of areas of all tetris
+blocks contained within (which may be `0`)
+
+There are also some rules that are not relevant to puzzles found in the original
+game, but are relevant to this solver's implementation:
+
+- White/black segregation cells are considered regular cells for solving the
+tetris block placement
+- Tetris block cells are considered uncolored cells for white/black segregation
 
 To do
 -----
 
-- Find the simplest solution (least amount of turns)
-- Solve puzzles with tetris blocks (static and with rotation)
+- Solve puzzles with tetris blocks that can be rotated
 - Solve other puzzles
