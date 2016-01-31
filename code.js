@@ -1,6 +1,6 @@
 // Configuration
-var gridWidth = 5;
-var gridHeight = 5;
+var gridWidth = 3;
+var gridHeight = 4;
 
 var radius;
 var spacing;
@@ -456,7 +456,15 @@ function getNextNodes(n, visited, required) {
 }
 
 function checkSolution(path, required) {
-    return checkRequiredNodes(path, required) && checkSegregation(path);
+    if (checkRequiredNodes(path, required)) {
+        var areas = checkSegregation(path);
+
+        if (areas) {
+            return checkTetris(path, areas);
+        }
+    }
+
+    return false;
 }
 
 function checkRequiredNodes(path, required) {
@@ -533,10 +541,13 @@ function checkSegregation(path) {
     var areaColor = CELL_TYPE.NONE;
     var visitList = [node(0, 0)];
 
+    var areas = [[]];
+
     while (visited.size != cellCount) {
         var n = visitList.shift();
         visited.add(n);
         remaining.delete(n);
+        areas[areas.length - 1].push(n);
 
         // Check how current cell compares to other cells we've seen in the same
         // continuous area so far
@@ -551,7 +562,7 @@ function checkSegregation(path) {
         for (var relPos of cells[[n.x, n.y]]) {
             var neighbour = node(n.x + relPos.x, n.y + relPos.y);
 
-            if (!visited.has(neighbour)) {
+            if (!visited.has(neighbour) && visitList.indexOf(neighbour) == -1) {
                 visitList.push(neighbour);
             }
         }
@@ -561,10 +572,44 @@ function checkSegregation(path) {
             for (var n of remaining.values()) {
                 areaColor = CELL_TYPE.NONE;
                 visitList = [n];
+                areas.push([]);
 
                 break;
             }
         }
+    }
+
+    return areas;
+}
+
+function checkTetris(path, areas) {
+    // Start with some early cheap checks
+    if (!checkTetrisAreas(path, areas)) {
+        return false;
+    }
+
+    // TODO: Full check
+
+    return true;
+}
+
+function checkTetrisAreas(path, areas) {
+    // Check if the amount of cells in each area matches the amount of tetris blocks
+    for (var area of areas) {
+        var cellCount = area.length;
+        var tetrisCount = 0;
+
+        for (var cell of area) {
+            if (cellTypes[cell.x][cell.y] == CELL_TYPE.TETRIS) {
+                for (var xx = 0; xx < 4; xx++) {
+                    for (var yy = 0; yy < 4; yy++) {
+                        tetrisCount += +cellTetrisLayouts[cell.x][cell.y][xx][yy];
+                    }
+                }
+            }
+        }
+
+        if (tetrisCount != 0 && tetrisCount != cellCount) return false;
     }
 
     return true;
@@ -673,21 +718,24 @@ function findSolution(path, visited, required) {
 initGrid();
 
 // Load sample puzzle (starting area)
-nodeTypes[0][4] = NODE_TYPE.START;
-nodeTypes[3][4] = NODE_TYPE.EXIT;
+nodeTypes[0][3] = NODE_TYPE.START;
+nodeTypes[2][0] = NODE_TYPE.EXIT;
 
-cellTypes[1][0] = CELL_TYPE.BLACK;
-cellTypes[2][0] = CELL_TYPE.WHITE;
-cellTypes[3][0] = CELL_TYPE.BLACK;
-cellTypes[0][1] = CELL_TYPE.BLACK;
-cellTypes[3][1] = CELL_TYPE.BLACK;
-cellTypes[0][2] = CELL_TYPE.BLACK;
-cellTypes[1][2] = CELL_TYPE.WHITE;
-cellTypes[2][2] = CELL_TYPE.BLACK;
-cellTypes[0][3] = CELL_TYPE.WHITE;
-cellTypes[1][3] = CELL_TYPE.WHITE;
-cellTypes[2][3] = CELL_TYPE.WHITE;
-cellTypes[3][3] = CELL_TYPE.BLACK;
+cellTypes[1][1] = CELL_TYPE.TETRIS;
+cellTypes[0][2] = CELL_TYPE.TETRIS;
+
+for (var xx = 0; xx < 4; xx++) {
+    for (var yy = 0; yy < 4; yy++) {
+        cellTetrisLayouts[1][1][xx][yy] = false;
+        cellTetrisLayouts[0][2][xx][yy] = false;
+    }
+}
+
+cellTetrisLayouts[1][1][0][0] = true;
+
+cellTetrisLayouts[0][2][0][0] = true;
+cellTetrisLayouts[0][2][0][1] = true;
+cellTetrisLayouts[0][2][1][1] = true;
 
 updateVisualGrid();
 
