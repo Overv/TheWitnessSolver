@@ -24,6 +24,12 @@ This solver does not attempt to find the "simplest" solution, because that would
 require an exhaustive search that eliminates many optimisation opportunities to
 keep the performance reasonable.
 
+The areas split up by the solution path are found incrementally, which means
+that for every step in the path only the last area has to be reexamined. This
+is much faster than running flood fill from scratch for every proposed solution
+and allows for early termination decisions, because other areas are known to
+longer change with future steps.
+
 Similar to the first-fit decreasing bin packing algorithm, tetris puzzle
 solutions are verified by trying to fit the largest tetris blocks within an area
 first, which allows for detecting nonsensical solutions earlier. Note that
@@ -67,6 +73,7 @@ tetris block placement
 To do
 -----
 
+- Make tetris solver to handle irregular grids
 - Improve performance of tetris puzzle solving (chokes on 5x5 swamp puzzles)
 - Solve puzzles with tetris blocks that can be rotated
 - Solve other puzzles

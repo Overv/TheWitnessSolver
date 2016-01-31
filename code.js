@@ -507,11 +507,11 @@ function checkSolution(path, required) {
     solutionVerifications++;
 
     if (checkRequiredNodes(path, required)) {
-        var areas = checkSegregation(path);
+        var areas = separateAreas(path);
 
-        if (areas) {
-            return checkTetris(path, areas);
-        }
+        return checkSegregation(areas) &&
+               checkTetrisAreas(areas) &&
+               checkTetris(areas);
     }
 
     return false;
@@ -528,123 +528,160 @@ function checkRequiredNodes(path, required) {
     return true;
 }
 
-// Determine reachable neighbours of each cell based on a proposed path
-function getCellReachabilities(path) {
-    var neighbours = [];
-
-    for (var x = 0; x < gridWidth - 1; x++) {
-        for (var y = 0; y < gridHeight - 1; y++) {
-            neighbours[[x, y]] = new Set();
-
-            if (x > 0) neighbours[[x, y]].add(node(-1, 0));
-            if (x < gridWidth - 2) neighbours[[x, y]].add(node(1, 0));
-            if (y > 0) neighbours[[x, y]].add(node(0, -1));
-            if (y < gridHeight - 2) neighbours[[x, y]].add(node(0, 1));
-        }
-    }
-
-    for (var i = 0; i < path.length; i++) {
-        var cur = path[i];
-        var next = path[i + 1];
-
-        if (next) {
-            if (next.x > cur.x) {
-                if (cur.y > 0) neighbours[[cur.x, cur.y - 1]].delete(node(0, 1));
-                if (cur.y < gridHeight - 1) neighbours[[cur.x, cur.y]].delete(node(0, -1));
-            }
-
-            if (next.x < cur.x) {
-                if (next.y > 0) neighbours[[next.x, next.y - 1]].delete(node(0, 1));
-                if (next.y < gridHeight - 1) neighbours[[next.x, next.y]].delete(node(0, -1));
-            }
-
-            if (next.y > cur.y) {
-                if (cur.x > 0) neighbours[[cur.x - 1, cur.y]].delete(node(1, 0));
-                if (cur.x < gridWidth - 1) neighbours[[cur.x, cur.y]].delete(node(-1, 0));
-            }
-
-            if (next.y < cur.y) {
-                if (next.x > 0) neighbours[[next.x - 1, next.y]].delete(node(1, 0));
-                if (next.x < gridWidth - 1) neighbours[[next.x, next.y]].delete(node(-1, 0));
-            }
-        }
-    }
-
-    return neighbours;
+function isOuterNode(n) {
+    return n.x == 0 || n.y == 0 || n.x == gridWidth - 1 || n.y == gridHeight - 1;
 }
 
-function checkSegregation(path) {
-    // Segregation of black and white squares is checked using flood fill
-    var visited = new Set();
-    var remaining = new Set();
-    var cellCount = (gridWidth - 1) * (gridHeight - 1);
+function getLeftRight(cur, next) {
+    var left, right;
 
-    for (var x = 0; x < gridWidth - 1; x++) {
-        for (var y = 0; y < gridHeight - 1; y++) {
-            remaining.add(node(x, y));
+    if (next.x > cur.x) {
+        return [
+            node(cur.x, cur.y - 1),
+            node(cur.x, cur.y)
+        ];
+    } else if (next.x < cur.x) {
+        return [
+            node(next.x, next.y),
+            node(next.x, next.y - 1)
+        ];
+    }
+
+    if (next.y > cur.y) {
+        return [
+            node(cur.x, cur.y),
+            node(cur.x - 1, cur.y)
+        ];
+    } else if (next.y < cur.y) {
+        return [
+            node(next.x - 1, next.y),
+            node(next.x, next.y)
+        ];
+    }
+}
+
+function checkSegregation(areas) {
+    for (var area of areas) {
+        var color = CELL_TYPE.NONE;
+
+        for (var c of area) {
+            if (cellTypes[c.x][c.y] == CELL_TYPE.BLACK || cellTypes[c.x][c.y] == CELL_TYPE.WHITE) {
+                if (!colorsCompatible(color, cellTypes[c.x][c.y])) {
+                    return false;
+                }
+
+                color = cellTypes[c.x][c.y];
+            }
         }
     }
 
-    var cells = getCellReachabilities(path);
+    return true;
+}
 
-    // Color of current area and cells in it left to visit
-    var areaColor = CELL_TYPE.NONE;
-    var visitList = [node(0, 0)];
-    var tetrisArea = 0;
+function checkTetrisAreas(areas) {
+    for (var area of areas) {
+        var areaCells = 0;
+        var tetrisBlocks = 0;
 
-    var areas = [[]];
+        for (var c of area) {
+            areaCells++;
 
-    while (visited.size != cellCount) {
-        var n = visitList.shift();
-        visited.add(n);
-        remaining.delete(n);
-        areas[areas.length - 1].push(n);
+            if (cellTypes[c.x][c.y] == CELL_TYPE.TETRIS) {
+                tetrisBlocks += cellTetrisAreas[c.x][c.y];
+            }
+        }
 
-        // Check how current cell compares to other cells we've seen in the same
-        // continuous area so far
-        if (!colorsCompatible(areaColor, cellTypes[n.x][n.y])) {
+        if (tetrisBlocks > 0 && tetrisBlocks != areaCells) {
             return false;
-        } else {
-            areaColor = cellTypes[n.x][n.y];
         }
+    }
 
-        if (cellTypes[n.x][n.y] == CELL_TYPE.TETRIS) {
-            tetrisArea += cellTetrisAreas[n.x][n.y];
+    return true;
+}
+
+function separateAreas(path) {
+    // Start with 1 area: the entire grid
+    var areas = [new Set()];
+
+    for (var x = 0; x < gridWidth - 1; x++) {
+        for (var y = 0; y < gridHeight - 1; y++) {
+            areas[0].add(node(x, y));
         }
+    }
 
-        // Add reachable neighbours we haven't visited yet
-        for (var relPos of cells[[n.x, n.y]]) {
-            var neighbour = node(n.x + relPos.x, n.y + relPos.y);
+    // Find segments of outer -> inner -> outer nodes in path, because it's
+    // these segments that divide areas
+    var segment = [];
 
-            if (!visited.has(neighbour) && visitList.indexOf(neighbour) == -1) {
-                visitList.push(neighbour);
+    for (var j = 0; j < path.length; j++) {
+        var p = path[j];
+        var pNext = path[j + 1];
+
+        if (isOuterNode(p)) {
+            if (segment.length <= 1) {
+                segment = [p];
+            } else {
+                segment.push(p);
+
+                // Select nodes on the left and on the right of the segment
+                var leftCells = [];
+                var rightCells = new Set();
+
+                for (var i = 0; i < segment.length - 1; i++) {
+                    var cur = segment[i];
+                    var next = segment[i + 1];
+
+                    var res = getLeftRight(cur, next);
+                    leftCells.push(res[0]);
+                    rightCells.add(res[1]);
+                }
+
+                segment = [segment[segment.length - 1]];
+
+                // Last area in the list is always the one we're currently in
+                var area = areas.shift();
+
+                // Find full left and right sides using flood fill
+                var visitList = leftCells;
+                leftCells = [];
+
+                while (visitList.length > 0) {
+                    var n = visitList.shift();
+
+                    if (rightCells.has(n) || !area.has(n)) continue;
+                    leftCells.push(n);
+                    area.delete(n);
+
+                    if (n.x > 0) visitList.push(node(n.x - 1, n.y));
+                    if (n.y > 0) visitList.push(node(n.x, n.y - 1));
+                    if (n.x < gridWidth - 1) visitList.push(node(n.x + 1, n.y));
+                    if (n.y < gridHeight - 1) visitList.push(node(n.x, n.y + 1));
+                }
+
+                // Determine which area the path continues in and add it last
+                if (pNext) {
+                    var res = getLeftRight(p, pNext);
+
+                    if (area.has(res[0]) || area.has(res[1])) {
+                        areas.push(new Set(leftCells));
+                        areas.push(area);
+
+                        continue;
+                    }
+                }
+
+                areas.push(area);
+                areas.push(new Set(leftCells));
             }
-        }
-
-        // Finished inspecting this area, select a new unvisited node - if any
-        if (visitList.length == 0) {
-            // Check if the tetris blocks could fit within this area in terms of
-            // raw block area, otherwise we can already drop this solution
-            if (tetrisArea > 0 && tetrisArea != areas[areas.length - 1].length) {
-                return false;
-            }
-
-            for (var n of remaining.values()) {
-                areaColor = CELL_TYPE.NONE;
-                visitList = [n];
-                tetrisArea = 0;
-
-                areas.push([]);
-
-                break;
-            }
+        } else if (segment.length >= 1) {
+            segment.push(p);
         }
     }
 
     return areas;
 }
 
-function checkTetris(path, areas) {
+function checkTetris(areas) {
     // For each area, try all possible positions of the tetris blocks contained
     // within and see if they fit (yes, solution verification is NP-complete!)
     for (var area of areas) {
@@ -661,7 +698,7 @@ function checkTetris(path, areas) {
             return cellTetrisAreas[b.x][b.y] - cellTetrisAreas[a.x][a.y];
         });
 
-        if (!findTetrisPlacement(new Set(area), tetrisCells)) {
+        if (!findTetrisPlacement(area, tetrisCells)) {
             return false;
         }
     }
