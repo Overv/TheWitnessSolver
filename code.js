@@ -41,6 +41,7 @@ var highlightedHorEdges = new Set();
 var highlightedVerEdges = new Set();
 
 var latestPath = [];
+var solutionVerifications = 0;
 
 // Used for keeping track of visited nodes with a Set
 // This requires that a given X,Y node is always the exact same JS object
@@ -424,7 +425,8 @@ function actualSolve(fractionChange) {
         var start = +new Date();
         latestPath = findSolution();
         var end = +new Date();
-        console.log('solving took ' + (end - start) + ' ms');
+        console.log('solving took ' + (end - start) + ' ms and ' + solutionVerifications + ' solution verificiations');
+        solutionVerifications = 0;
     }
 
     highlightedNodes.clear();
@@ -502,6 +504,8 @@ function getNextNodes(n, visited, required) {
 }
 
 function checkSolution(path, required) {
+    solutionVerifications++;
+
     if (checkRequiredNodes(path, required)) {
         var areas = checkSegregation(path);
 
