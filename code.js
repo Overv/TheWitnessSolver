@@ -595,7 +595,16 @@ function separateAreasStep(last, cur, areas, segment) {
 
     // Process new segments
     if (isOuterNode(last)) {
-        if (segment.length <= 1) {
+        // outer -> outer counts as outer -> inner -> outer if it crosses an
+        // inner edge. This is an edge case on small puzzles.
+        var innerEdge =
+            segment.length == 1 &&
+            (
+                (segment[0].x != last.x && last.y > 0 && last.y < gridHeight - 1) ||
+                (segment[0].y != last.y && last.x > 0 && last.x < gridWidth - 1)
+            );
+
+        if (segment.length <= 1 && !innerEdge) {
             segment = [last];
         } else {
             segment.push(last);
@@ -638,7 +647,7 @@ function separateAreasStep(last, cur, areas, segment) {
             // Determine which area the path continues in and add it last
             var res = getLeftRight(last, cur);
 
-            if (area.has(res[0]) || area.has(res[1])) {
+            if (res && (area.has(res[0]) || area.has(res[1]))) {
                 areas.push(new Set(leftCells));
                 areas.push(area);
             } else {
@@ -658,7 +667,18 @@ function separateAreasStep(last, cur, areas, segment) {
 
     // If the current node is an exit node, also check the last area
     if (nodeTypes[cur.x][cur.y] == NODE_TYPE.EXIT) {
-        if (!checkArea(areas[areas.length - 1])) {
+        // If there is currently a segment going on, skip ahead a node to arrive
+        // at the areas if the solution were to end here
+        var innerEdgeTmp =
+            (cur.x != last.x && last.y > 0 && last.y < gridHeight - 1) ||
+            (cur.y != last.y && last.x > 0 && last.x < gridWidth - 1);
+
+        var tmpRes = false;
+        if (segment.length > 1 || innerEdgeTmp) {
+            tmpRes = separateAreasStep(cur, cur, copyAreas(areas), segment.slice());
+        }
+
+        if (!tmpRes && !checkArea(areas[areas.length - 1])) {
             return false;
         }
     }
