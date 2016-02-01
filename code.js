@@ -607,24 +607,27 @@ function separateAreasStep(last, cur, areas, segment) {
         if (segment.length <= 1 && !innerEdge) {
             segment = [last];
         } else {
-            segment.push(last);
-
             // Select nodes on the left and on the right of the segment
             var leftCells = [];
             var rightCells = new Set();
 
-            for (var i = 0; i < segment.length - 1; i++) {
+            for (var i = 0; i < segment.length; i++) {
                 var segCur = segment[i];
-                var segNext = segment[i + 1];
+
+                var segNext = last;
+                if (i < segment.length - 1) {
+                    segNext = segment[i + 1];
+                }
 
                 var res = getLeftRight(segCur, segNext);
                 leftCells.push(res[0]);
                 rightCells.add(res[1]);
             }
 
-            segment = [segment[segment.length - 1]];
+            segment = [last];
 
             // Last area in the list is always the one we're currently in
+            areas = copyAreas(areas);
             var area = areas.pop();
 
             // Find full left and right sides using flood fill
@@ -662,6 +665,7 @@ function separateAreasStep(last, cur, areas, segment) {
             }
         }
     } else if (segment.length >= 1) {
+        segment = segment.slice();
         segment.push(last);
     }
 
@@ -675,7 +679,7 @@ function separateAreasStep(last, cur, areas, segment) {
 
         var tmpRes = false;
         if (segment.length > 1 || innerEdgeTmp) {
-            tmpRes = separateAreasStep(cur, cur, copyAreas(areas), segment.slice());
+            tmpRes = separateAreasStep(cur, cur, areas, segment);
         }
 
         if (!tmpRes && !checkArea(areas[areas.length - 1])) {
@@ -861,7 +865,7 @@ function findSolution(path, visited, required, exitsRemaining, areas, segment) {
             var newVisited = new Set(visited);
             newVisited.add(n);
 
-            var fullPath = findSolution(newPath, newVisited, required, exitsRemaining, copyAreas(areas), (segment || []).slice());
+            var fullPath = findSolution(newPath, newVisited, required, exitsRemaining, areas, segment);
 
             if (fullPath) {
                 return fullPath;
