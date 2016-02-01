@@ -627,8 +627,8 @@ function separateAreasStep(last, cur, areas, segment) {
             segment = [last];
 
             // Last area in the list is always the one we're currently in
-            areas = copyAreas(areas);
-            var area = areas.pop();
+            var area = new Set(areas[areas.length - 1]);
+            areas = areas.slice(0, -1);
 
             // Find full left and right sides using flood fill
             var visitList = leftCells;
@@ -873,14 +873,6 @@ function findSolution(path, visited, required, exitsRemaining, areas, segment) {
         }
 
         return false;
-    }
-}
-
-function copyAreas(areas) {
-    if (areas) {
-        return areas.slice().map(function(s) { return new Set(s); });
-    } else {
-        return areas;
     }
 }
 
