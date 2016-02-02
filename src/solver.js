@@ -253,7 +253,7 @@ function checkLastArea(last, cur, areas, segment) {
         tmpRes = separateAreasStep(cur, cur, areas, segment);
         areas = tmpRes[0];
     }
-    
+
     if (!tmpRes || !checkArea(areas[areas.length - 1])) {
         return false;
     } else {
@@ -342,17 +342,25 @@ function findTetrisPlacement(area, cells) {
     var maxAng = puzzle.cells[cell.x][cell.y].type == CELL_TYPE.TETRIS_ROTATED ? 270 : 0;
 
     // For insertion points, use the bounding box of the area to deal with
-    // shapes that don't have any blocks in the top-left part (see issue #2)
-    if (layout[0][0]) {
-        var insertionPoints = area;
-    } else {
-        var bb = areaBounds(area);
-        var insertionPoints = new Set();
+    // shapes that don't have any blocks in the top-left part for an orientation
+    // (see issue #2)
+    var insertionPoints = area;
 
-        for (var x = bb[0]; x <= bb[2]; x++) {
-            for (var y = bb[1]; y <= bb[3]; y++) {
-                insertionPoints.add(point(x, y));
+    for (var ang = 0; ang <= maxAng; ang += 90) {
+        var xx = tx(0, 0, bounds, ang);
+        var yy = ty(0, 0, bounds, ang);
+
+        if (!layout[xx][yy]) {
+            var bb = areaBounds(area);
+            insertionPoints = new Set();
+
+            for (var x = bb[0]; x <= bb[2]; x++) {
+                for (var y = bb[1]; y <= bb[3]; y++) {
+                    insertionPoints.add(point(x, y));
+                }
             }
+
+            break;
         }
     }
 
