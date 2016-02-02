@@ -91,8 +91,12 @@ function initGrid() {
                         cellTetrisLayouts[x][y][xx][yy] = false;
                     }
                 }
+                cellTetrisLayouts[x][y][0][0] = true;
+                cellTetrisLayouts[x][y][3][0] = true;
+                cellTetrisLayouts[x][y][0][3] = true;
+                cellTetrisLayouts[x][y][3][3] = true;
 
-                cellTetrisAreas[x][y] = 16;
+                cellTetrisAreas[x][y] = 4;
                 cellTetrisBounds[x][y] = [0, 0, 3, 3];
             }
 
