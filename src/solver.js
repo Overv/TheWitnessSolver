@@ -128,7 +128,7 @@ function checkSegregation(area) {
     return true;
 }
 
-function checkTetrisAreas(area) {
+function checkTetrisArea(area) {
     var areaCells = 0;
     var tetrisBlocks = 0;
 
@@ -248,12 +248,13 @@ function checkLastArea(last, cur, areas, segment) {
         (cur.x != last.x && last.y > 0 && last.y < puzzle.height - 1) ||
         (cur.y != last.y && last.x > 0 && last.x < puzzle.width - 1);
 
-    var tmpRes = false;
+    var tmpRes = true;
     if (segment.length > 1 || innerEdgeTmp) {
         tmpRes = separateAreasStep(cur, cur, areas, segment);
+        areas = tmpRes[0];
     }
-
-    if (!tmpRes && !checkArea(areas[areas.length - 1])) {
+    
+    if (!tmpRes || !checkArea(areas[areas.length - 1])) {
         return false;
     } else {
         return true;
@@ -262,7 +263,7 @@ function checkLastArea(last, cur, areas, segment) {
 
 function checkArea(area) {
     return checkSegregation(area) &&
-           checkTetrisAreas(area) &&
+           checkTetrisArea(area) &&
            checkTetris(area);
 }
 
