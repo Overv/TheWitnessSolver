@@ -1,14 +1,24 @@
 // Configuration
-var gridWidth = 5;
-var gridHeight = 5;
-
 var radius;
 var spacing;
 var horPadding;
 var verPadding;
-calculateMetrics();
+
+var latestPath = [];
+var viewingSolution = false;
+var solutionFraction = 1;
+var highlightedNodes = new Set();
+var highlightedHorEdges = new Set();
+var highlightedVerEdges = new Set();
 
 var gridEl = $('svg');
+
+function calculateMetrics() {
+    radius = 88 / Math.max(6, Math.max(puzzle.width, puzzle.height));
+    spacing = 800 / (Math.max(puzzle.width, puzzle.height) + 1);
+    horPadding = (800 - spacing * (puzzle.width - 1)) / 2;
+    verPadding = (800 - spacing * (puzzle.height - 1)) / 2;
+}
 
 // X index to X position on visual grid for nodes
 function nodeX(x) {
@@ -18,13 +28,6 @@ function nodeX(x) {
 // Y index to Y position on visual grid for nodes
 function nodeY(y) {
     return verPadding + spacing * y;
-}
-
-function calculateMetrics() {
-    radius = 88 / Math.max(6, Math.max(gridWidth, gridHeight));
-    spacing = 800 / (Math.max(gridWidth, gridHeight) + 1);
-    horPadding = (800 - spacing * (gridWidth - 1)) / 2;
-    verPadding = (800 - spacing * (gridHeight - 1)) / 2;
 }
 
 function deepMap(arr, fn) {
@@ -50,17 +53,18 @@ function bool2num(b) {
 }
 
 // Update URL that allows people to link puzzles
+// These use the legacy format for compatibility
 function updateURL() {
     var encoding = {
-        gridWidth: gridWidth,
-        gridHeight: gridHeight,
-        horEdges: deepMap(horEdges, bool2num),
-        verEdges: deepMap(verEdges, bool2num),
-        nodeTypes: nodeTypes,
-        cellTypes: cellTypes,
-        cellTetrisLayouts: deepMap(cellTetrisLayouts, bool2num),
-        cellTetrisAreas: cellTetrisAreas,
-        cellTetrisBounds: cellTetrisBounds
+        gridWidth: puzzle.width,
+        gridHeight: puzzle.height,
+        horEdges: deepMap(puzzle.horEdges, bool2num),
+        verEdges: deepMap(puzzle.verEdges, bool2num),
+        nodeTypes: deepMap(puzzle.nodes, function(n) { return n.type; }),
+        cellTypes: deepMap(puzzle.cells, function(c) { return c.type; }),
+        cellTetrisLayouts: deepMap(deepMap(puzzle.cells, function(c) { return c.tetris; }), bool2num),
+        cellTetrisAreas: deepMap(puzzle.cells, function(c) { return c.tetrisArea; }),
+        cellTetrisBounds: deepMap(puzzle.cells, function(c) { return c.tetrisBounds; })
     };
 
     encoding = btoa(JSON.stringify(encoding));
@@ -72,21 +76,30 @@ function parseFromURL() {
     try {
         var encoding = JSON.parse(atob(location.hash.substr(1)));
 
-        gridWidth = encoding['gridWidth'];
-        gridHeight = encoding['gridHeight'];
-        horEdges = deepMap(encoding['horEdges'], num2bool);
-        verEdges = deepMap(encoding['verEdges'], num2bool);
-        nodeTypes = encoding['nodeTypes'];
-        cellTypes = encoding['cellTypes'];
-        cellTetrisLayouts = deepMap(encoding['cellTetrisLayouts'], num2bool);
-        cellTetrisAreas = encoding['cellTetrisAreas'];
-        cellTetrisBounds = encoding['cellTetrisBounds'];
+        initPuzzle(puzzle, encoding['gridWidth'], encoding['gridHeight']);
 
-        calculateMetrics();
+        puzzle.horEdges = deepMap(encoding['horEdges'], num2bool);
+        puzzle.verEdges = deepMap(encoding['verEdges'], num2bool);
+        puzzle.nodes = deepMap(encoding['nodeTypes'], function(t) { return {type: t}; });
+        puzzle.cells = deepMap(encoding['cellTypes'], function(t) { return {type: t}; });
+
+        var cellTetrisLayouts = deepMap(encoding['cellTetrisLayouts'], num2bool);
+        var cellTetrisAreas = encoding['cellTetrisAreas'];
+        var cellTetrisBounds = encoding['cellTetrisBounds'];
+
+        for (var x = 0; x < puzzle.width - 1; x++) {
+            for (var y = 0; y < puzzle.height - 1; y++) {
+                puzzle.cells[x][y].tetris = cellTetrisLayouts[x][y];
+                puzzle.cells[x][y].tetrisArea = cellTetrisAreas[x][y];
+                puzzle.cells[x][y].tetrisBounds = cellTetrisBounds[x][y];
+            }
+        }
+
         updateVisualGrid();
 
         return true;
     } catch (e) {
+        throw e;
         alert('Invalid puzzle URL provided! Displaying the default puzzle.');
 
         return false;
@@ -116,8 +129,8 @@ function updateVisualGrid() {
 }
 
 function addVisualGridCells() {
-    for (var x = 0; x < gridWidth - 1; x++) {
-        for (var y = 0; y < gridHeight - 1; y++) {
+    for (var x = 0; x < puzzle.width - 1; x++) {
+        for (var y = 0; y < puzzle.height - 1; y++) {
             var baseEl = $('<rect />')
                 .attr('class', 'cell')
                 .attr('data-x', x)
@@ -131,7 +144,7 @@ function addVisualGridCells() {
                 .css('fill', 'rgba(0, 0, 0, 0)')
                 .appendTo(gridEl);
 
-            if (cellTypes[x][y] == CELL_TYPE.BLACK || cellTypes[x][y] == CELL_TYPE.WHITE) {
+            if (puzzle.cells[x][y].type == CELL_TYPE.BLACK || puzzle.cells[x][y].type == CELL_TYPE.WHITE) {
                 var iconEl = baseEl.clone()
                     .attr('x', nodeX(x) + spacing / 2 - spacing / 8)
                     .attr('y', nodeY(y) + spacing / 2 - spacing / 8)
@@ -139,16 +152,16 @@ function addVisualGridCells() {
                     .attr('height', spacing / 4)
                     .appendTo(gridEl);
 
-                if (cellTypes[x][y] == CELL_TYPE.BLACK) {
+                if (puzzle.cells[x][y].type == CELL_TYPE.BLACK) {
                     iconEl.css('fill', 'rgba(0, 0, 0, 0.9)');
                 } else {
                     iconEl.css('fill', 'white');
                 }
-            } else if (cellTypes[x][y] == CELL_TYPE.TETRIS || cellTypes[x][y] == CELL_TYPE.TETRIS_ROTATED) {
+            } else if (puzzle.cells[x][y].type == CELL_TYPE.TETRIS || puzzle.cells[x][y].type == CELL_TYPE.TETRIS_ROTATED) {
                 // Draw tetris grid
                 for (var xx = 0; xx < 4; xx++) {
                     for (var yy = 0; yy < 4; yy++) {
-                        var a = cellTetrisLayouts[x][y][xx][yy] ? '1' : '0';
+                        var a = puzzle.cells[x][y].tetris[xx][yy] ? '1' : '0';
 
                         var iconEl = baseEl.clone()
                             .attr('class', 'tetris-cell')
@@ -163,7 +176,7 @@ function addVisualGridCells() {
                             .css('fill', 'rgba(248, 222, 37, ' + a + ')')
                             .appendTo(gridEl);
 
-                        if (cellTypes[x][y] == CELL_TYPE.TETRIS_ROTATED) {
+                        if (puzzle.cells[x][y].type == CELL_TYPE.TETRIS_ROTATED) {
                             var cx = nodeX(x) + spacing / 2;
                             var cy = nodeY(y) + spacing / 2;
 
@@ -178,8 +191,8 @@ function addVisualGridCells() {
 
 function addVisualGridEdges(drawHighlighted) {
     // Set up horizontal edges
-    for (var x = 0; x < gridWidth - 1; x++) {
-        for (var y = 0; y < gridHeight; y++) {
+    for (var x = 0; x < puzzle.width - 1; x++) {
+        for (var y = 0; y < puzzle.height; y++) {
             var highlighted = highlightedHorEdges.has(node(x, y));
 
             if (highlighted != drawHighlighted) continue;
@@ -196,7 +209,7 @@ function addVisualGridEdges(drawHighlighted) {
                 .css('fill', highlighted ? '#B1F514' : '#026223')
                 .appendTo(gridEl);
 
-            if (!horEdges[x][y]) {
+            if (!puzzle.horEdges[x][y]) {
                 baseEl.clone()
                     .attr('x', nodeX(x) + spacing / 2 - radius)
                     .attr('width', radius * 2)
@@ -209,8 +222,8 @@ function addVisualGridEdges(drawHighlighted) {
     }
 
     // Set up vertical edges
-    for (var x = 0; x < gridWidth; x++) {
-        for (var y = 0; y < gridHeight - 1; y++) {
+    for (var x = 0; x < puzzle.width; x++) {
+        for (var y = 0; y < puzzle.height - 1; y++) {
             var highlighted = highlightedVerEdges.has(node(x, y));
 
             if (highlighted != drawHighlighted) continue;
@@ -227,7 +240,7 @@ function addVisualGridEdges(drawHighlighted) {
                 .css('fill', highlighted ? '#B1F514' : '#026223')
                 .appendTo(gridEl);
 
-            if (!verEdges[x][y]) {
+            if (!puzzle.verEdges[x][y]) {
                 baseEl.clone()
                     .attr('y', nodeY(y) + spacing / 2 - radius)
                     .attr('height', radius * 2)
@@ -241,8 +254,8 @@ function addVisualGridEdges(drawHighlighted) {
 }
 
 function addVisualGridPoints() {
-    for (var x = 0; x < gridWidth; x++) {
-        for (var y = 0; y < gridHeight; y++) {
+    for (var x = 0; x < puzzle.width; x++) {
+        for (var y = 0; y < puzzle.height; y++) {
             // Create base node for event handling
             var baseEl = $('<circle />')
                 .attr('class', 'node')
@@ -255,9 +268,9 @@ function addVisualGridPoints() {
                 .appendTo(gridEl);
 
             // Extend visualization based on special node types
-            if (nodeTypes[x][y] == NODE_TYPE.START) {
+            if (puzzle.nodes[x][y].type == NODE_TYPE.START) {
                 baseEl.attr('r', radius * 2);
-            } else if (nodeTypes[x][y] == NODE_TYPE.REQUIRED) {
+            } else if (puzzle.nodes[x][y].type == NODE_TYPE.REQUIRED) {
                 var r = radius * 0.8;
                 var hr = radius * 0.5;
 
@@ -277,20 +290,20 @@ function addVisualGridPoints() {
                     .css('fill', highlightedNodes.has(node(x, y)) ? '#B1F514' : 'black')
                     .attr('d', path)
                     .appendTo(gridEl);
-            } else if (nodeTypes[x][y] == NODE_TYPE.EXIT) {
+            } else if (puzzle.nodes[x][y].type == NODE_TYPE.EXIT) {
                 var ang = 0;
 
                 if (x == 0) ang = 0;
-                else if (x == gridWidth - 1) ang = 180;
+                else if (x == puzzle.width - 1) ang = 180;
 
                 if (y == 0) ang = 90;
-                else if (y == gridHeight - 1) ang = -90;
+                else if (y == puzzle.height - 1) ang = -90;
 
                 // Diagonally for corner nodes
                 if (x == 0 && y == 0) ang -= 45;
-                else if (x == 0 && y == gridHeight - 1) ang += 45;
-                else if (x == gridWidth - 1 && y == 0) ang += 45;
-                else if (x == gridWidth - 1 && y == gridHeight - 1) ang -= 45;
+                else if (x == 0 && y == puzzle.height - 1) ang += 45;
+                else if (x == puzzle.width - 1 && y == 0) ang += 45;
+                else if (x == puzzle.width - 1 && y == puzzle.height - 1) ang -= 45;
 
                 var parentEl = $('<g />')
                     .css('transform', 'translate(' + nodeX(x) + 'px, ' + nodeY(y) + 'px) rotate(' + ang + 'deg) translate(' + -nodeX(x) + 'px, ' + -nodeY(y) + 'px)')
@@ -328,7 +341,7 @@ function addGridEventHandlers() {
         var x = +this.getAttribute('data-x');
         var y = +this.getAttribute('data-y');
 
-        cellTypes[x][y] = (cellTypes[x][y] + 1) % 5;
+        puzzle.cells[x][y].type = (puzzle.cells[x][y].type + 1) % (CELL_TYPE.LAST + 1);
 
         updateVisualGrid();
     });
@@ -349,7 +362,7 @@ function addGridEventHandlers() {
             return;
         }
 
-        cellTetrisLayouts[x][y][xx][yy] = !cellTetrisLayouts[x][y][xx][yy];
+        puzzle.cells[x][y].tetris[xx][yy] = !puzzle.cells[x][y].tetris[xx][yy];
         updateTetrisLayoutProperties(x, y);
 
         updateVisualGrid();
@@ -364,9 +377,9 @@ function addGridEventHandlers() {
         var y = +this.getAttribute('data-y');
         
         if (type == 'hor-edge') {
-            horEdges[x][y] = !horEdges[x][y];
+            puzzle.horEdges[x][y] = !puzzle.horEdges[x][y];
         } else if (type == 'ver-edge') {
-            verEdges[x][y] = !verEdges[x][y];
+            puzzle.verEdges[x][y] = !puzzle.verEdges[x][y];
         }
 
         updateVisualGrid();
@@ -378,12 +391,12 @@ function addGridEventHandlers() {
         var x = +this.getAttribute('data-x');
         var y = +this.getAttribute('data-y');
 
-        nodeTypes[x][y] = (nodeTypes[x][y] + 1) % 4;
+        puzzle.nodes[x][y].type = (puzzle.nodes[x][y].type + 1) % (NODE_TYPE.LAST + 1);
 
         // Only outer nodes can be exits
-        if (nodeTypes[x][y] == NODE_TYPE.EXIT) {
-            if (x != 0 && y != 0 && x != gridWidth - 1 && y != gridHeight - 1) {
-                nodeTypes[x][y] = NODE_TYPE.NORMAL;
+        if (puzzle.nodes[x][y].type == NODE_TYPE.EXIT) {
+            if (x != 0 && y != 0 && x != puzzle.width - 1 && y != puzzle.height - 1) {
+                puzzle.nodes[x][y].type = NODE_TYPE.NORMAL;
             }
         }
 
@@ -468,12 +481,8 @@ var gridSizeSelector = $('#grid-size-selector');
 
 for (var x = 1; x <= 5; x++) {
     for (var y = 1; y <= 5; y++) {
-        var el = $('<option value="' + x + ',' + y + '">' + x + ' x ' + y + '</option>')
+        var el = $('<option value="' + (x + 1) + ',' + (y + 1) + '">' + x + ' x ' + y + '</option>')
             .appendTo(gridSizeSelector);
-
-        if (x == gridWidth - 1 && y == gridHeight - 1) {
-            el.prop('selected', true);
-        }
     }
 }
 
@@ -483,11 +492,7 @@ gridSizeSelector.change(function() {
 
     clearSolution();
 
-    gridWidth = x + 1;
-    gridHeight = y + 1;
-    calculateMetrics();
-
-    initGrid();
+    initPuzzle(puzzle, x, y);
 
     updateVisualGrid();
 });
@@ -515,27 +520,27 @@ hintSizeSelector.change(function() {
 function initialize() {
     // Sample puzzle from swamp area
     if (location.hash.length == 0 || !parseFromURL()) {
-        initGrid();
+        initPuzzle(puzzle, 5, 5);
 
-        verEdges[2][1] = false;
-        nodeTypes[0][4] = NODE_TYPE.START;
-        nodeTypes[4][0] = NODE_TYPE.EXIT;
-        cellTypes[0][1] = CELL_TYPE.TETRIS;
-        cellTypes[1][3] = CELL_TYPE.TETRIS;
-        cellTypes[2][3] = CELL_TYPE.TETRIS;
+        puzzle.verEdges[2][1] = false;
+        puzzle.nodes[0][4].type = NODE_TYPE.START;
+        puzzle.nodes[4][0].type = NODE_TYPE.EXIT;
+        puzzle.cells[0][1].type = CELL_TYPE.TETRIS;
+        puzzle.cells[1][3].type = CELL_TYPE.TETRIS;
+        puzzle.cells[2][3].type = CELL_TYPE.TETRIS;
 
         for (var xx = 0; xx < 4; xx++) {
             for (var yy = 0; yy < 4; yy++) {
-                cellTetrisLayouts[0][1][xx][yy] = false;
-                cellTetrisLayouts[1][3][xx][yy] = false;
-                cellTetrisLayouts[2][3][xx][yy] = false;
+                puzzle.cells[0][1].tetris[xx][yy] = false;
+                puzzle.cells[1][3].tetris[xx][yy] = false;
+                puzzle.cells[2][3].tetris[xx][yy] = false;
             }
         }
 
-        for (var xx = 0; xx < 4; xx++) cellTetrisLayouts[0][1][xx][0] = true;
+        for (var xx = 0; xx < 4; xx++) puzzle.cells[0][1].tetris[xx][0] = true;
         for (var yy = 0; yy < 3; yy++) {
-            cellTetrisLayouts[1][3][0][yy] = true;
-            cellTetrisLayouts[2][3][0][yy] = true;
+            puzzle.cells[1][3].tetris[0][yy] = true;
+            puzzle.cells[2][3].tetris[0][yy] = true;
         }
 
         updateTetrisLayoutProperties(0, 1);

@@ -1,32 +1,3 @@
-// Recalculate the area and top-left anchor of the tetris layout in cell (x, y)
-function updateTetrisLayoutProperties(x, y) {
-    cellTetrisAreas[x][y] = 0;
-    cellTetrisBounds[x][y] = [Number.MAX_VALUE, Number.MAX_VALUE, 0, 0];
-
-    for (var xx = 0; xx < 4; xx++) {
-        for (var yy = 0; yy < 4; yy++) {
-            cellTetrisAreas[x][y] += +cellTetrisLayouts[x][y][xx][yy];
-
-            if (cellTetrisLayouts[x][y][xx][yy]) {
-                cellTetrisBounds[x][y][0] = Math.min(cellTetrisBounds[x][y][0], xx);
-                cellTetrisBounds[x][y][1] = Math.min(cellTetrisBounds[x][y][1], yy);
-                cellTetrisBounds[x][y][2] = Math.max(cellTetrisBounds[x][y][2], xx);
-                cellTetrisBounds[x][y][3] = Math.max(cellTetrisBounds[x][y][3], yy);
-            }
-        }
-    }
-}
-
-function horEdgeExists(x, y) {
-    if (x < 0 || y < 0 || x >= gridWidth - 1 || y >= gridHeight) return false;
-    return horEdges[x][y];
-}
-
-function verEdgeExists(x, y) {
-    if (x < 0 || y < 0 || x >= gridWidth || y >= gridHeight - 1) return false;
-    return verEdges[x][y];
-}
-
 function getNextNodes(n, visited, required) {
     var candidates = [];
 
@@ -64,7 +35,7 @@ function checkRequiredNodes(path, required) {
 }
 
 function isOuterNode(n) {
-    return n.x == 0 || n.y == 0 || n.x == gridWidth - 1 || n.y == gridHeight - 1;
+    return n.x == 0 || n.y == 0 || n.x == puzzle.width - 1 || n.y == puzzle.height - 1;
 }
 
 function getLeftRight(cur, next) {
@@ -99,12 +70,12 @@ function checkSegregation(area) {
     var color = CELL_TYPE.NONE;
 
     for (var c of area) {
-        if (cellTypes[c.x][c.y] == CELL_TYPE.BLACK || cellTypes[c.x][c.y] == CELL_TYPE.WHITE) {
-            if (!colorsCompatible(color, cellTypes[c.x][c.y])) {
+        if (puzzle.cells[c.x][c.y].type == CELL_TYPE.BLACK || puzzle.cells[c.x][c.y].type == CELL_TYPE.WHITE) {
+            if (!colorsCompatible(color, puzzle.cells[c.x][c.y].type)) {
                 return false;
             }
 
-            color = cellTypes[c.x][c.y];
+            color = puzzle.cells[c.x][c.y].type;
         }
     }
 
@@ -118,8 +89,8 @@ function checkTetrisAreas(area) {
     for (var c of area) {
         areaCells++;
 
-        if (cellTypes[c.x][c.y] == CELL_TYPE.TETRIS || cellTypes[c.x][c.y] == CELL_TYPE.TETRIS_ROTATED) {
-            tetrisBlocks += cellTetrisAreas[c.x][c.y];
+        if (puzzle.cells[c.x][c.y].type == CELL_TYPE.TETRIS || puzzle.cells[c.x][c.y].type == CELL_TYPE.TETRIS_ROTATED) {
+            tetrisBlocks += puzzle.cells[c.x][c.y].tetrisArea;
         }
     }
 
@@ -135,8 +106,8 @@ function separateAreasStep(last, cur, areas, segment) {
     if (!areas) {
         areas = [new Set()];
 
-        for (var x = 0; x < gridWidth - 1; x++) {
-            for (var y = 0; y < gridHeight - 1; y++) {
+        for (var x = 0; x < puzzle.width - 1; x++) {
+            for (var y = 0; y < puzzle.height - 1; y++) {
                 areas[0].add(node(x, y));
             }
         }
@@ -151,8 +122,8 @@ function separateAreasStep(last, cur, areas, segment) {
         var innerEdge =
             segment.length == 1 &&
             (
-                (segment[0].x != last.x && last.y > 0 && last.y < gridHeight - 1) ||
-                (segment[0].y != last.y && last.x > 0 && last.x < gridWidth - 1)
+                (segment[0].x != last.x && last.y > 0 && last.y < puzzle.height - 1) ||
+                (segment[0].y != last.y && last.x > 0 && last.x < puzzle.width - 1)
             );
 
         if (segment.length <= 1 && !innerEdge) {
@@ -194,8 +165,8 @@ function separateAreasStep(last, cur, areas, segment) {
 
                 if (n.x > 0) visitList.push(node(n.x - 1, n.y));
                 if (n.y > 0) visitList.push(node(n.x, n.y - 1));
-                if (n.x < gridWidth - 1) visitList.push(node(n.x + 1, n.y));
-                if (n.y < gridHeight - 1) visitList.push(node(n.x, n.y + 1));
+                if (n.x < puzzle.width - 1) visitList.push(node(n.x + 1, n.y));
+                if (n.y < puzzle.height - 1) visitList.push(node(n.x, n.y + 1));
             }
 
             // Determine which area the path continues in and add it last
@@ -221,12 +192,12 @@ function separateAreasStep(last, cur, areas, segment) {
     }
 
     // If the current node is an exit node, also check the last area
-    if (nodeTypes[cur.x][cur.y] == NODE_TYPE.EXIT) {
+    if (puzzle.nodes[cur.x][cur.y].type == NODE_TYPE.EXIT) {
         // If there is currently a segment going on, skip ahead a node to arrive
         // at the areas if the solution were to end here
         var innerEdgeTmp =
-            (cur.x != last.x && last.y > 0 && last.y < gridHeight - 1) ||
-            (cur.y != last.y && last.x > 0 && last.x < gridWidth - 1);
+            (cur.x != last.x && last.y > 0 && last.y < puzzle.height - 1) ||
+            (cur.y != last.y && last.x > 0 && last.x < puzzle.width - 1);
 
         var tmpRes = false;
         if (segment.length > 1 || innerEdgeTmp) {
@@ -253,14 +224,14 @@ function checkTetris(area) {
     var tetrisCells = [];
 
     for (var cell of area) {
-        if (cellTypes[cell.x][cell.y] == CELL_TYPE.TETRIS || cellTypes[cell.x][cell.y] == CELL_TYPE.TETRIS_ROTATED) {
+        if (puzzle.cells[cell.x][cell.y].type == CELL_TYPE.TETRIS || puzzle.cells[cell.x][cell.y].type == CELL_TYPE.TETRIS_ROTATED) {
             tetrisCells.push(cell);
         }
     }
 
     // Use first-fit decreasing style optimisation
     tetrisCells.sort(function(a, b) {
-        return cellTetrisAreas[b.x][b.y] - cellTetrisAreas[a.x][a.y];
+        return puzzle.cells[b.x][b.y].tetrisArea - puzzle.cells[a.x][a.y].tetrisArea;
     });
 
     if (!findTetrisPlacement(area, tetrisCells)) {
@@ -302,11 +273,11 @@ function findTetrisPlacement(area, cells) {
     if (cells.length == 0) return true;
     var cell = cells.shift();
 
-    var bounds = cellTetrisBounds[cell.x][cell.y];
-    var layout = cellTetrisLayouts[cell.x][cell.y];
+    var bounds = puzzle.cells[cell.x][cell.y].tetrisBounds;
+    var layout = puzzle.cells[cell.x][cell.y].tetris;
 
     // Try every possible viable placement
-    var maxAng = cellTypes[cell.x][cell.y] == CELL_TYPE.TETRIS_ROTATED ? 270 : 0;
+    var maxAng = puzzle.cells[cell.x][cell.y].type == CELL_TYPE.TETRIS_ROTATED ? 270 : 0;
 
     for (var ang = 0; ang <= maxAng; ang += 90) {
         for (var topLeft of area) {
@@ -357,16 +328,16 @@ function colorsCompatible(c1, c2) {
 function determineAuxilaryRequired() {
     var aux = new Set();
 
-    for (var x = 0; x < gridWidth - 1; x++) {
-        for (var y = 0; y < gridHeight - 1; y++) {
+    for (var x = 0; x < puzzle.width - 1; x++) {
+        for (var y = 0; y < puzzle.height - 1; y++) {
             // Right side
-            if (x < gridWidth - 2 && !colorsCompatible(cellTypes[x][y], cellTypes[x + 1][y])) {
+            if (x < puzzle.width - 2 && !colorsCompatible(puzzle.cells[x][y].type, puzzle.cells[x + 1][y].type)) {
                 aux.add(node(x + 1, y));
                 aux.add(node(x + 1, y + 1));
             }
 
             // Bottom side
-            if (y < gridHeight - 2 && !colorsCompatible(cellTypes[x][y], cellTypes[x][y + 1])) {
+            if (y < puzzle.height - 2 && !colorsCompatible(puzzle.cells[x][y].type, puzzle.cells[x][y + 1].type)) {
                 aux.add(node(x, y + 1));
                 aux.add(node(x + 1, y + 1));
             }
@@ -379,9 +350,9 @@ function determineAuxilaryRequired() {
 function getNodesByType(type) {
     var nodes = [];
 
-    for (var x = 0; x < gridWidth; x++) {
-        for (var y = 0; y < gridHeight; y++) {
-            if (nodeTypes[x][y] == type) {
+    for (var x = 0; x < puzzle.width; x++) {
+        for (var y = 0; y < puzzle.height; y++) {
+            if (puzzle.nodes[x][y].type == type) {
                 nodes.push(node(x, y));
             }
         }
@@ -432,7 +403,7 @@ function findSolution(path, visited, required, exitsRemaining, areas, segment) {
 
         // If we're at an exit node and the partial solution is correct then
         // this is a correct full solution
-        if (nodeTypes[cn.x][cn.y] == NODE_TYPE.EXIT) {
+        if (puzzle.nodes[cn.x][cn.y].type == NODE_TYPE.EXIT) {
             if (checkRequiredNodes(path, required)) {
                 return path;
             } else {
