@@ -237,25 +237,27 @@ function separateAreasStep(last, cur, areas, segment) {
         segment.push(last);
     }
 
-    // If the current node is an exit node, also check the last area
-    if (puzzle.nodes[cur.x][cur.y].type == NODE_TYPE.EXIT) {
-        // If there is currently a segment going on, skip ahead a node to arrive
-        // at the areas if the solution were to end here
-        var innerEdgeTmp =
-            (cur.x != last.x && last.y > 0 && last.y < puzzle.height - 1) ||
-            (cur.y != last.y && last.x > 0 && last.x < puzzle.width - 1);
+    return [areas, segment];
+}
 
-        var tmpRes = false;
-        if (segment.length > 1 || innerEdgeTmp) {
-            tmpRes = separateAreasStep(cur, cur, areas, segment);
-        }
+// Close up the last area and check it (for exit nodes)
+function checkLastArea(last, cur, areas, segment) {
+    // If there is currently a segment going on, skip ahead a node to arrive
+    // at the areas if the solution were to end here
+    var innerEdgeTmp =
+        (cur.x != last.x && last.y > 0 && last.y < puzzle.height - 1) ||
+        (cur.y != last.y && last.x > 0 && last.x < puzzle.width - 1);
 
-        if (!tmpRes && !checkArea(areas[areas.length - 1])) {
-            return false;
-        }
+    var tmpRes = false;
+    if (segment.length > 1 || innerEdgeTmp) {
+        tmpRes = separateAreasStep(cur, cur, areas, segment);
     }
 
-    return [areas, segment];
+    if (!tmpRes && !checkArea(areas[areas.length - 1])) {
+        return false;
+    } else {
+        return true;
+    }
 }
 
 function checkArea(area) {
@@ -447,10 +449,10 @@ function findSolution(path, visited, required, exitsRemaining, areas, segment) {
             segment = res[1];
         }
 
-        // If we're at an exit node and the partial solution is correct then
-        // this is a correct full solution
+        // If we're at an exit node and the partial solution along with the last
+        // area is correct, then the full solution is correct
         if (puzzle.nodes[cn.x][cn.y].type == NODE_TYPE.EXIT) {
-            if (checkRequiredNodes(path, required)) {
+            if (checkLastArea(prevn, cn, areas, segment) && checkRequiredNodes(path, required)) {
                 return path;
             } else {
                 exitsRemaining--;
