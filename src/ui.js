@@ -201,7 +201,7 @@ function addVisualGridEdges(drawHighlighted) {
     // Set up horizontal edges
     for (var x = 0; x < puzzle.width - 1; x++) {
         for (var y = 0; y < puzzle.height; y++) {
-            var highlighted = highlightedHorEdges.has(node(x, y));
+            var highlighted = highlightedHorEdges.has(point(x, y));
 
             if (highlighted != drawHighlighted) continue;
 
@@ -232,7 +232,7 @@ function addVisualGridEdges(drawHighlighted) {
     // Set up vertical edges
     for (var x = 0; x < puzzle.width; x++) {
         for (var y = 0; y < puzzle.height - 1; y++) {
-            var highlighted = highlightedVerEdges.has(node(x, y));
+            var highlighted = highlightedVerEdges.has(point(x, y));
 
             if (highlighted != drawHighlighted) continue;
 
@@ -272,7 +272,7 @@ function addVisualGridPoints() {
                 .attr('cx', nodeX(x))
                 .attr('cy', nodeY(y))
                 .attr('r', radius)
-                .css('fill', highlightedNodes.has(node(x, y)) ? '#B1F514' : '#026223')
+                .css('fill', highlightedNodes.has(point(x, y)) ? '#B1F514' : '#026223')
                 .appendTo(gridEl);
 
             // Extend visualization based on special node types
@@ -295,7 +295,7 @@ function addVisualGridPoints() {
                     .attr('class', 'node')
                     .attr('data-x', x)
                     .attr('data-y', y)
-                    .css('fill', highlightedNodes.has(node(x, y)) ? '#B1F514' : 'black')
+                    .css('fill', highlightedNodes.has(point(x, y)) ? '#B1F514' : 'black')
                     .attr('d', path)
                     .appendTo(gridEl);
             } else if (puzzle.nodes[x][y].type == NODE_TYPE.EXIT) {
@@ -325,7 +325,7 @@ function addVisualGridPoints() {
                     .attr('y', nodeY(y) - radius)
                     .attr('width', radius * 2)
                     .attr('height', radius * 2)
-                    .css('fill', highlightedNodes.has(node(x, y)) ? '#B1F514' : '#026223')
+                    .css('fill', highlightedNodes.has(point(x, y)) ? '#B1F514' : '#026223')
                     .appendTo(parentEl);
 
                 $('<circle />')
@@ -335,7 +335,7 @@ function addVisualGridPoints() {
                     .attr('cx', nodeX(x) - radius * 2)
                     .attr('cy', nodeY(y))
                     .attr('r', radius)
-                    .css('fill', highlightedNodes.has(node(x, y)) ? '#B1F514' : '#026223')
+                    .css('fill', highlightedNodes.has(point(x, y)) ? '#B1F514' : '#026223')
                     .appendTo(parentEl);
             }
         }
@@ -446,14 +446,14 @@ function actualSolve(fractionChange) {
             var next = path[i + 1];
 
             // Highlight visited node
-            highlightedNodes.add(node(cur.x, cur.y));
+            highlightedNodes.add(point(cur.x, cur.y));
 
             // Highlight edge to next node
             if (next) {
-                if (next.x > cur.x) highlightedHorEdges.add(node(cur.x, cur.y));
-                if (next.x < cur.x) highlightedHorEdges.add(node(next.x, next.y));
-                if (next.y > cur.y) highlightedVerEdges.add(node(cur.x, cur.y));
-                if (next.y < cur.y) highlightedVerEdges.add(node(next.x, next.y));
+                if (next.x > cur.x) highlightedHorEdges.add(point(cur.x, cur.y));
+                if (next.x < cur.x) highlightedHorEdges.add(point(next.x, next.y));
+                if (next.y > cur.y) highlightedVerEdges.add(point(cur.x, cur.y));
+                if (next.y < cur.y) highlightedVerEdges.add(point(next.x, next.y));
             }
         }
 

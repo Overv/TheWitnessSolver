@@ -1,21 +1,67 @@
+// Check if a tetris layout is hollow by checking if all blocks are reachable
+// from the outside
+function isTetrisLayoutHollow(cell) {
+    if (cell.tetrisArea == 0) return false;
+
+    // Start with all outer nodes
+    var visitList = [];
+
+    for (var x = 0; x < 4; x++) {
+        for (var y = 0; y < 4; y++) {
+            if (x == 0 || y == 0 || x == 3 || y == 3) {
+                visitList.push(point(x, y));
+            }
+        }
+    }
+
+    // Now allow spreading for anything except block -> nonblock
+    var reachable = new Set();
+
+    while (visitList.length > 0) {
+        var p = visitList.shift();
+
+        reachable.add(p);
+
+        var neighbours = [
+            point(p.x - 1, p.y),
+            point(p.x + 1, p.y),
+            point(p.x, p.y - 1),
+            point(p.x, p.y + 1)
+        ];
+
+        for (var n of neighbours) {
+            var valid =
+                n.x > 0 && n.y > 0 && n.x < 4 && n.y < 4 &&
+                !(cell.tetris[p.x][p.y] && !cell.tetris[n.x][n.y]) &&
+                !reachable.has(n);
+
+            if (valid) {
+                visitList.push(n);
+            }
+        }
+    }
+
+    return reachable.size != 16;
+}
+
 function getNextNodes(n, visited, required) {
     var candidates = [];
 
     // Select every connected node that has not yet been visited
-    if (horEdgeExists(n.x, n.y) && !visited.has(node(n.x + 1, n.y))) {
-        candidates.push(node(n.x + 1, n.y));
+    if (horEdgeExists(n.x, n.y) && !visited.has(point(n.x + 1, n.y))) {
+        candidates.push(point(n.x + 1, n.y));
     }
 
-    if (horEdgeExists(n.x - 1, n.y) && !visited.has(node(n.x - 1, n.y))) {
-        candidates.push(node(n.x - 1, n.y));
+    if (horEdgeExists(n.x - 1, n.y) && !visited.has(point(n.x - 1, n.y))) {
+        candidates.push(point(n.x - 1, n.y));
     }
 
-    if (verEdgeExists(n.x, n.y) && !visited.has(node(n.x, n.y + 1))) {
-        candidates.push(node(n.x, n.y + 1));
+    if (verEdgeExists(n.x, n.y) && !visited.has(point(n.x, n.y + 1))) {
+        candidates.push(point(n.x, n.y + 1));
     }
 
-    if (verEdgeExists(n.x, n.y - 1) && !visited.has(node(n.x, n.y - 1))) {
-        candidates.push(node(n.x, n.y - 1));
+    if (verEdgeExists(n.x, n.y - 1) && !visited.has(point(n.x, n.y - 1))) {
+        candidates.push(point(n.x, n.y - 1));
     }
 
     candidates.sort(function(a, b) { return required.has(b) - required.has(a); });
@@ -34,7 +80,7 @@ function checkRequiredNodes(path, required) {
     return true;
 }
 
-function isOuterNode(n) {
+function isOuterpoint(n) {
     return n.x == 0 || n.y == 0 || n.x == puzzle.width - 1 || n.y == puzzle.height - 1;
 }
 
@@ -43,25 +89,25 @@ function getLeftRight(cur, next) {
 
     if (next.x > cur.x) {
         return [
-            node(cur.x, cur.y - 1),
-            node(cur.x, cur.y)
+            point(cur.x, cur.y - 1),
+            point(cur.x, cur.y)
         ];
     } else if (next.x < cur.x) {
         return [
-            node(next.x, next.y),
-            node(next.x, next.y - 1)
+            point(next.x, next.y),
+            point(next.x, next.y - 1)
         ];
     }
 
     if (next.y > cur.y) {
         return [
-            node(cur.x, cur.y),
-            node(cur.x - 1, cur.y)
+            point(cur.x, cur.y),
+            point(cur.x - 1, cur.y)
         ];
     } else if (next.y < cur.y) {
         return [
-            node(next.x - 1, next.y),
-            node(next.x, next.y)
+            point(next.x - 1, next.y),
+            point(next.x, next.y)
         ];
     }
 }
@@ -108,7 +154,7 @@ function separateAreasStep(last, cur, areas, segment) {
 
         for (var x = 0; x < puzzle.width - 1; x++) {
             for (var y = 0; y < puzzle.height - 1; y++) {
-                areas[0].add(node(x, y));
+                areas[0].add(point(x, y));
             }
         }
 
@@ -116,7 +162,7 @@ function separateAreasStep(last, cur, areas, segment) {
     }
 
     // Process new segments
-    if (isOuterNode(last)) {
+    if (isOuterpoint(last)) {
         // outer -> outer counts as outer -> inner -> outer if it crosses an
         // inner edge. This is an edge case on small puzzles.
         var innerEdge =
@@ -163,10 +209,10 @@ function separateAreasStep(last, cur, areas, segment) {
                 leftCells.push(n);
                 area.delete(n);
 
-                if (n.x > 0) visitList.push(node(n.x - 1, n.y));
-                if (n.y > 0) visitList.push(node(n.x, n.y - 1));
-                if (n.x < puzzle.width - 1) visitList.push(node(n.x + 1, n.y));
-                if (n.y < puzzle.height - 1) visitList.push(node(n.x, n.y + 1));
+                if (n.x > 0) visitList.push(point(n.x - 1, n.y));
+                if (n.y > 0) visitList.push(point(n.x, n.y - 1));
+                if (n.x < puzzle.width - 1) visitList.push(point(n.x + 1, n.y));
+                if (n.y < puzzle.height - 1) visitList.push(point(n.x, n.y + 1));
             }
 
             // Determine which area the path continues in and add it last
@@ -294,7 +340,7 @@ function findTetrisPlacement(area, cells) {
                     }
 
                     if (xx >= bounds[0] && yy >= bounds[1] && xx <= bounds[2] && yy <= bounds[3] && layout[xx][yy]) {
-                        var n = node(topLeft.x + dx, topLeft.y + dy);
+                        var n = point(topLeft.x + dx, topLeft.y + dy);
 
                         remainingArea.delete(n);
 
@@ -332,14 +378,14 @@ function determineAuxilaryRequired() {
         for (var y = 0; y < puzzle.height - 1; y++) {
             // Right side
             if (x < puzzle.width - 2 && !colorsCompatible(puzzle.cells[x][y].type, puzzle.cells[x + 1][y].type)) {
-                aux.add(node(x + 1, y));
-                aux.add(node(x + 1, y + 1));
+                aux.add(point(x + 1, y));
+                aux.add(point(x + 1, y + 1));
             }
 
             // Bottom side
             if (y < puzzle.height - 2 && !colorsCompatible(puzzle.cells[x][y].type, puzzle.cells[x][y + 1].type)) {
-                aux.add(node(x, y + 1));
-                aux.add(node(x + 1, y + 1));
+                aux.add(point(x, y + 1));
+                aux.add(point(x + 1, y + 1));
             }
         }
     }
@@ -353,7 +399,7 @@ function getNodesByType(type) {
     for (var x = 0; x < puzzle.width; x++) {
         for (var y = 0; y < puzzle.height; y++) {
             if (puzzle.nodes[x][y].type == type) {
-                nodes.push(node(x, y));
+                nodes.push(point(x, y));
             }
         }
     }
@@ -373,6 +419,15 @@ function findSolution(path, visited, required, exitsRemaining, areas, segment) {
     }
 
     if (!path || path.length == 0) {
+        // If there are hollow tetris blocks, then the puzzle can't be solved
+        for (var x = 0; x < puzzle.width - 1; x++) {
+            for (var y = 0; y < puzzle.height - 1; y++) {
+                if (isTetrisLayoutHollow(puzzle.cells[x][y])) {
+                    return false;
+                }
+            }
+        }
+
         // If this is the first call, recursively try every starting node
         for (var n of getNodesByType(NODE_TYPE.START)) {
             var fullPath = findSolution([n], new Set([n]), required, exitsRemaining, areas, segment);

@@ -23,15 +23,15 @@ var CELL_TYPE = {
 // Puzzle definition
 var puzzle = {};
 
-// Used for keeping track of visited nodes with a Set
-// This requires that a given X,Y node is always the exact same JS object
-var nodePool = [];
+// Used for keeping track of visited points with a Set
+// This requires that a given X,Y point is always the exact same JS object
+var pointPool = [];
 
-function node(x, y) {
-    if (!nodePool[x]) nodePool[x] = [];
-    if (!nodePool[x][y]) nodePool[x][y] = {x: x, y: y};
+function point(x, y) {
+    if (!pointPool[x]) pointPool[x] = [];
+    if (!pointPool[x][y]) pointPool[x][y] = {x: x, y: y};
 
-    return nodePool[x][y];
+    return pointPool[x][y];
 }
 
 function create2DArray(w, h) {
