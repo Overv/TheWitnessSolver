@@ -145,45 +145,53 @@ function addVisualGridCells() {
                 .appendTo(gridEl);
 
             if (puzzle.cells[x][y].type == CELL_TYPE.BLACK || puzzle.cells[x][y].type == CELL_TYPE.WHITE) {
-                var iconEl = baseEl.clone()
-                    .attr('x', nodeX(x) + spacing / 2 - spacing / 8)
-                    .attr('y', nodeY(y) + spacing / 2 - spacing / 8)
-                    .attr('width', spacing / 4)
-                    .attr('height', spacing / 4)
-                    .appendTo(gridEl);
-
-                if (puzzle.cells[x][y].type == CELL_TYPE.BLACK) {
-                    iconEl.css('fill', 'rgba(0, 0, 0, 0.9)');
-                } else {
-                    iconEl.css('fill', 'white');
-                }
+                addVisualBlackWhiteCell(x, y, baseEl);
             } else if (puzzle.cells[x][y].type == CELL_TYPE.TETRIS || puzzle.cells[x][y].type == CELL_TYPE.TETRIS_ROTATED) {
-                // Draw tetris grid
-                for (var xx = 0; xx < 4; xx++) {
-                    for (var yy = 0; yy < 4; yy++) {
-                        var a = puzzle.cells[x][y].tetris[xx][yy] ? '1' : '0';
+                addVisualGridTetrisCell(x, y, baseEl);
+            }
+        }
+    }
+}
 
-                        var iconEl = baseEl.clone()
-                            .attr('class', 'tetris-cell')
-                            .attr('data-xx', xx)
-                            .attr('data-yy', yy)
-                            .attr('x', nodeX(x) + (spacing - radius) / 5 * (xx + 1))
-                            .attr('y', nodeY(y) + (spacing - radius) / 5 * (yy + 1))
-                            .attr('width', spacing / 8)
-                            .attr('height', spacing / 8)
-                            .attr('rx', 0)
-                            .attr('ry', 0)
-                            .css('fill', 'rgba(248, 222, 37, ' + a + ')')
-                            .appendTo(gridEl);
+function addVisualBlackWhiteCell(x, y, baseEl) {
+    var iconEl = baseEl.clone()
+        .attr('x', nodeX(x) + spacing / 2 - spacing / 8)
+        .attr('y', nodeY(y) + spacing / 2 - spacing / 8)
+        .attr('width', spacing / 4)
+        .attr('height', spacing / 4)
+        .appendTo(gridEl);
 
-                        if (puzzle.cells[x][y].type == CELL_TYPE.TETRIS_ROTATED) {
-                            var cx = nodeX(x) + spacing / 2;
-                            var cy = nodeY(y) + spacing / 2;
+    if (puzzle.cells[x][y].type == CELL_TYPE.BLACK) {
+        iconEl.css('fill', 'rgba(0, 0, 0, 0.9)');
+    } else {
+        iconEl.css('fill', 'white');
+    }
+}
 
-                            iconEl.css('transform', 'translate(' + cx + 'px, ' + cy + 'px) scale(0.8, 0.8) rotate(45deg) translate(' + -cx + 'px, ' + -cy + 'px)');
-                        }
-                    }
-                }
+function addVisualGridTetrisCell(x, y, baseEl) {
+    // Draw tetris grid
+    for (var xx = 0; xx < 4; xx++) {
+        for (var yy = 0; yy < 4; yy++) {
+            var a = puzzle.cells[x][y].tetris[xx][yy] ? '1' : '0';
+
+            var iconEl = baseEl.clone()
+                .attr('class', 'tetris-cell')
+                .attr('data-xx', xx)
+                .attr('data-yy', yy)
+                .attr('x', nodeX(x) + (spacing - radius) / 5 * (xx + 1))
+                .attr('y', nodeY(y) + (spacing - radius) / 5 * (yy + 1))
+                .attr('width', spacing / 8)
+                .attr('height', spacing / 8)
+                .attr('rx', 0)
+                .attr('ry', 0)
+                .css('fill', 'rgba(248, 222, 37, ' + a + ')')
+                .appendTo(gridEl);
+
+            if (puzzle.cells[x][y].type == CELL_TYPE.TETRIS_ROTATED) {
+                var cx = nodeX(x) + spacing / 2;
+                var cy = nodeY(y) + spacing / 2;
+
+                iconEl.css('transform', 'translate(' + cx + 'px, ' + cy + 'px) scale(0.8, 0.8) rotate(45deg) translate(' + -cx + 'px, ' + -cy + 'px)');
             }
         }
     }

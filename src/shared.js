@@ -89,9 +89,6 @@ function initEdges(puzzle) {
 
 function initCells(puzzle) {
     puzzle.cells = create2DArray(puzzle.width - 1, puzzle.height - 1);
-    puzzle.cellTetrisLayouts = create2DArray(puzzle.width - 1, puzzle.height - 1);
-    puzzle.cellTetrisAreas = create2DArray(puzzle.width - 1, puzzle.height - 1);
-    puzzle.cellTetrisBounds = create2DArray(puzzle.width - 1, puzzle.height - 1);
 
     for (var x = 0; x < puzzle.width - 1; x++) {
         for (var y = 0; y < puzzle.height - 1; y++) {
