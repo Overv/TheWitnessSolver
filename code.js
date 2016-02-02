@@ -861,13 +861,6 @@ function findTetrisPlacement(area, cells) {
     // Try every possible viable placement
     var maxAng = cellTypes[cell.x][cell.y] == CELL_TYPE.TETRIS_ROTATED ? 270 : 0;
 
-    var yesyesyes = true;
-    for (var c of area) {
-        if (c.y != 2) yesyesyes = false;
-    }
-    yesyesyes &= area.size == 5;
-    yesyesyes &= cell.x == 2 && cell.y == 2;
-
     for (var ang = 0; ang <= maxAng; ang += 90) {
         for (var topLeft of area) {
             var viable = true;
