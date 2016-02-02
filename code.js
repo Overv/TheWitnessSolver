@@ -147,16 +147,38 @@ function verEdgeExists(x, y) {
     return verEdges[x][y];
 }
 
+function deepMap(arr, fn) {
+    if (typeof(arr) == 'object' && arr.length !== undefined) {
+        var arr = arr.slice();
+
+        for (var i = 0; i < arr.length; i++) {
+            arr[i] = deepMap(arr[i], fn);
+        }
+
+        return arr;
+    } else {
+        return fn(arr);
+    }
+}
+
+function num2bool(n) {
+    return !!n;
+}
+
+function bool2num(b) {
+    return +b;
+}
+
 // Update URL that allows people to link puzzles
 function updateURL() {
     var encoding = {
         gridWidth: gridWidth,
         gridHeight: gridHeight,
-        horEdges: horEdges,
-        verEdges: verEdges,
+        horEdges: deepMap(horEdges, bool2num),
+        verEdges: deepMap(verEdges, bool2num),
         nodeTypes: nodeTypes,
         cellTypes: cellTypes,
-        cellTetrisLayouts: cellTetrisLayouts,
+        cellTetrisLayouts: deepMap(cellTetrisLayouts, bool2num),
         cellTetrisAreas: cellTetrisAreas,
         cellTetrisBounds: cellTetrisBounds
     };
@@ -172,14 +194,15 @@ function parseFromURL() {
 
         gridWidth = encoding['gridWidth'];
         gridHeight = encoding['gridHeight'];
-        horEdges = encoding['horEdges'];
-        verEdges = encoding['verEdges'];
+        horEdges = deepMap(encoding['horEdges'], num2bool);
+        verEdges = deepMap(encoding['verEdges'], num2bool);
         nodeTypes = encoding['nodeTypes'];
         cellTypes = encoding['cellTypes'];
-        cellTetrisLayouts = encoding['cellTetrisLayouts'];
+        cellTetrisLayouts = deepMap(encoding['cellTetrisLayouts'], num2bool);
         cellTetrisAreas = encoding['cellTetrisAreas'];
         cellTetrisBounds = encoding['cellTetrisBounds'];
 
+        calculateMetrics();
         updateVisualGrid();
 
         return true;
@@ -277,12 +300,11 @@ function addVisualGridEdges(drawHighlighted) {
     // Set up horizontal edges
     for (var x = 0; x < gridWidth - 1; x++) {
         for (var y = 0; y < gridHeight; y++) {
-            var a = horEdges[x][y] ? '1' : '0';
             var highlighted = highlightedHorEdges.has(node(x, y));
 
             if (highlighted != drawHighlighted) continue;
 
-            $('<rect />')
+            var baseEl = $('<rect />')
                 .attr('class', 'edge')
                 .attr('data-type', 'hor-edge')
                 .attr('data-x', x)
@@ -291,20 +313,29 @@ function addVisualGridEdges(drawHighlighted) {
                 .attr('y', nodeY(y) - radius)
                 .attr('width', spacing)
                 .attr('height', radius * 2)
-                .css('fill', highlighted ? '#B1F514' : 'rgba(2, 98, 35, ' + a + ')')
+                .css('fill', highlighted ? '#B1F514' : '#026223')
                 .appendTo(gridEl);
+
+            if (!horEdges[x][y]) {
+                baseEl.clone()
+                    .attr('x', nodeX(x) + spacing / 2 - radius)
+                    .attr('width', radius * 2)
+                    .attr('y', nodeY(y) - radius - 2)
+                    .attr('height', radius * 2 + 4)
+                    .css('fill', '#00E94F')
+                    .appendTo(gridEl);
+            }
         }
     }
 
     // Set up vertical edges
     for (var x = 0; x < gridWidth; x++) {
         for (var y = 0; y < gridHeight - 1; y++) {
-            var a = verEdges[x][y] ? '1' : '0';
             var highlighted = highlightedVerEdges.has(node(x, y));
 
             if (highlighted != drawHighlighted) continue;
 
-            $('<rect />')
+            var baseEl = $('<rect />')
                 .attr('class', 'edge')
                 .attr('data-type', 'ver-edge')
                 .attr('data-x', x)
@@ -313,8 +344,18 @@ function addVisualGridEdges(drawHighlighted) {
                 .attr('y', nodeY(y))
                 .attr('width', radius * 2)
                 .attr('height', spacing)
-                .css('fill', highlighted ? '#B1F514' : 'rgba(2, 98, 35, ' + a + ')')
+                .css('fill', highlighted ? '#B1F514' : '#026223')
                 .appendTo(gridEl);
+
+            if (!verEdges[x][y]) {
+                baseEl.clone()
+                    .attr('y', nodeY(y) + spacing / 2 - radius)
+                    .attr('height', radius * 2)
+                    .attr('x', nodeX(x) - radius - 2)
+                    .attr('width', radius * 2 + 4)
+                    .css('fill', '#00E94F')
+                    .appendTo(gridEl);
+            }
         }
     }
 }
@@ -322,11 +363,6 @@ function addVisualGridEdges(drawHighlighted) {
 function addVisualGridPoints() {
     for (var x = 0; x < gridWidth; x++) {
         for (var y = 0; y < gridHeight; y++) {
-            // Only render node if there are edges connecting to it (to allow for irregular grid shapes)
-            if (!horEdgeExists(x - 1, y) && !horEdgeExists(x, y) && !verEdgeExists(x, y - 1) && !verEdgeExists(x, y)) {
-                continue;
-            }
-
             // Create base node for event handling
             var baseEl = $('<circle />')
                 .attr('class', 'node')
