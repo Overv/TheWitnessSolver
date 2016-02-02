@@ -315,6 +315,19 @@ function ty(x, y, bounds, ang) {
     }
 }
 
+function areaBounds(area) {
+    var bounds = [Number.MAX_VALUE, Number.MAX_VALUE, 0, 0];
+
+    for (var c of area) {
+        bounds[0] = Math.min(bounds[0], c.x);
+        bounds[1] = Math.min(bounds[1], c.y);
+        bounds[2] = Math.max(bounds[2], c.x);
+        bounds[3] = Math.max(bounds[3], c.y);
+    }
+
+    return bounds;
+}
+
 // Find a successful placement of tetris blocks specified in [cells] given the
 // available area cells [area]
 function findTetrisPlacement(area, cells) {
@@ -327,8 +340,23 @@ function findTetrisPlacement(area, cells) {
     // Try every possible viable placement
     var maxAng = puzzle.cells[cell.x][cell.y].type == CELL_TYPE.TETRIS_ROTATED ? 270 : 0;
 
+    // For insertion points, use the bounding box of the area to deal with
+    // shapes that don't have any blocks in the top-left part (see issue #2)
+    if (layout[0][0]) {
+        var insertionPoints = area;
+    } else {
+        var bb = areaBounds(area);
+        var insertionPoints = new Set();
+
+        for (var x = bb[0]; x <= bb[2]; x++) {
+            for (var y = bb[1]; y <= bb[3]; y++) {
+                insertionPoints.add(point(x, y));
+            }
+        }
+    }
+
     for (var ang = 0; ang <= maxAng; ang += 90) {
-        for (var topLeft of area) {
+        for (var topLeft of insertionPoints) {
             var viable = true;
             var remainingArea = new Set(area);
 
