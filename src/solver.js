@@ -419,15 +419,6 @@ function findSolution(path, visited, required, exitsRemaining, areas, segment) {
     }
 
     if (!path || path.length == 0) {
-        // If there are hollow tetris blocks, then the puzzle can't be solved
-        for (var x = 0; x < puzzle.width - 1; x++) {
-            for (var y = 0; y < puzzle.height - 1; y++) {
-                if (isTetrisLayoutHollow(puzzle.cells[x][y])) {
-                    return false;
-                }
-            }
-        }
-
         // If this is the first call, recursively try every starting node
         for (var n of getNodesByType(NODE_TYPE.START)) {
             var fullPath = findSolution([n], new Set([n]), required, exitsRemaining, areas, segment);
