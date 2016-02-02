@@ -20,7 +20,8 @@ var CELL_TYPE = {
     'NONE': 0,
     'BLACK': 1,
     'WHITE': 2,
-    'TETRIS': 3
+    'TETRIS': 3,
+    'TETRIS_ROTATED': 4
 };
 
 // Visual grid definition
@@ -32,7 +33,7 @@ var nodeTypes = [];
 var cellTypes = [];
 var cellTetrisLayouts = [];
 var cellTetrisAreas = [];
-var cellTetrisAnchors = [];
+var cellTetrisBounds = [];
 
 var viewingSolution = false;
 var solutionFraction = 1;
@@ -70,7 +71,7 @@ function initGrid() {
         cellTypes[x] = [];
         cellTetrisLayouts[x] = [];
         cellTetrisAreas[x] = [];
-        cellTetrisAnchors[x] = [];
+        cellTetrisBounds[x] = [];
         horEdges[x] = [];
         verEdges[x] = [];
 
@@ -87,12 +88,12 @@ function initGrid() {
                 for (var xx = 0; xx < 4; xx++) {
                     cellTetrisLayouts[x][y][xx] = [];
                     for (var yy = 0; yy < 4; yy++) {
-                        cellTetrisLayouts[x][y][xx][yy] = true;
+                        cellTetrisLayouts[x][y][xx][yy] = false;
                     }
                 }
 
                 cellTetrisAreas[x][y] = 16;
-                cellTetrisAnchors[x][y] = [0, 0];
+                cellTetrisBounds[x][y] = [0, 0, 3, 3];
             }
 
             if (!lastCol) {
@@ -109,15 +110,17 @@ function initGrid() {
 // Recalculate the area and top-left anchor of the tetris layout in cell (x, y)
 function updateTetrisLayoutProperties(x, y) {
     cellTetrisAreas[x][y] = 0;
-    cellTetrisAnchors[x][y] = [Number.MAX_VALUE, Number.MAX_VALUE];
+    cellTetrisBounds[x][y] = [Number.MAX_VALUE, Number.MAX_VALUE, 0, 0];
 
     for (var xx = 0; xx < 4; xx++) {
         for (var yy = 0; yy < 4; yy++) {
             cellTetrisAreas[x][y] += +cellTetrisLayouts[x][y][xx][yy];
 
             if (cellTetrisLayouts[x][y][xx][yy]) {
-                cellTetrisAnchors[x][y][0] = Math.min(cellTetrisAnchors[x][y][0], xx);
-                cellTetrisAnchors[x][y][1] = Math.min(cellTetrisAnchors[x][y][1], yy);
+                cellTetrisBounds[x][y][0] = Math.min(cellTetrisBounds[x][y][0], xx);
+                cellTetrisBounds[x][y][1] = Math.min(cellTetrisBounds[x][y][1], yy);
+                cellTetrisBounds[x][y][2] = Math.max(cellTetrisBounds[x][y][2], xx);
+                cellTetrisBounds[x][y][3] = Math.max(cellTetrisBounds[x][y][3], yy);
             }
         }
     }
@@ -189,7 +192,7 @@ function addVisualGridCells() {
                 } else {
                     iconEl.css('fill', 'white');
                 }
-            } else if (cellTypes[x][y] == CELL_TYPE.TETRIS) {
+            } else if (cellTypes[x][y] == CELL_TYPE.TETRIS || cellTypes[x][y] == CELL_TYPE.TETRIS_ROTATED) {
                 // Draw tetris grid
                 for (var xx = 0; xx < 4; xx++) {
                     for (var yy = 0; yy < 4; yy++) {
@@ -207,6 +210,13 @@ function addVisualGridCells() {
                             .attr('ry', 0)
                             .css('fill', 'rgba(248, 222, 37, ' + a + ')')
                             .appendTo(gridEl);
+
+                        if (cellTypes[x][y] == CELL_TYPE.TETRIS_ROTATED) {
+                            var cx = nodeX(x) + spacing / 2;
+                            var cy = nodeY(y) + spacing / 2;
+
+                            iconEl.css('transform', 'translate(' + cx + 'px, ' + cy + 'px) scale(0.8, 0.8) rotate(45deg) translate(' + -cx + 'px, ' + -cy + 'px)');
+                        }
                     }
                 }
             }
@@ -353,12 +363,12 @@ function addGridEventHandlers() {
         var x = +this.getAttribute('data-x');
         var y = +this.getAttribute('data-y');
 
-        cellTypes[x][y] = (cellTypes[x][y] + 1) % 4;
+        cellTypes[x][y] = (cellTypes[x][y] + 1) % 5;
 
         updateVisualGrid();
     });
 
-    $('.tetris-cell').click(function() {
+    $('.tetris-cell').mouseup(function(e) {
         if (viewingSolution) return;
 
         var x = +this.getAttribute('data-x');
@@ -366,11 +376,20 @@ function addGridEventHandlers() {
         var xx = +this.getAttribute('data-xx');
         var yy = +this.getAttribute('data-yy');
 
+        if (e.which != 3) {
+            if (e.which == 1) {
+                $('.cell[data-x="' + x + '"][data-y="' + y + '"]').click();
+            }
+
+            return;
+        }
+
         cellTetrisLayouts[x][y][xx][yy] = !cellTetrisLayouts[x][y][xx][yy];
         updateTetrisLayoutProperties(x, y);
 
         updateVisualGrid();
     });
+    $('rect').contextmenu(function() { return false; });
 
     $('.edge').click(function() {
         if (viewingSolution) return;
@@ -567,7 +586,7 @@ function checkTetrisAreas(area) {
     for (var c of area) {
         areaCells++;
 
-        if (cellTypes[c.x][c.y] == CELL_TYPE.TETRIS) {
+        if (cellTypes[c.x][c.y] == CELL_TYPE.TETRIS || cellTypes[c.x][c.y] == CELL_TYPE.TETRIS_ROTATED) {
             tetrisBlocks += cellTetrisAreas[c.x][c.y];
         }
     }
@@ -702,7 +721,7 @@ function checkTetris(area) {
     var tetrisCells = [];
 
     for (var cell of area) {
-        if (cellTypes[cell.x][cell.y] == CELL_TYPE.TETRIS) {
+        if (cellTypes[cell.x][cell.y] == CELL_TYPE.TETRIS || cellTypes[cell.x][cell.y] == CELL_TYPE.TETRIS_ROTATED) {
             tetrisCells.push(cell);
         }
     }
@@ -719,37 +738,81 @@ function checkTetris(area) {
     }
 }
 
+// returns x for [bounds] cropped tetris layout after rotation by [ang] degrees
+function tx(x, y, bounds, ang) {
+    if (ang == 0) {
+        return x + bounds[0];
+    } else if (ang == 90) {
+        return y + bounds[0];
+    } else if (ang == 180) {
+        return bounds[2] - x;
+    } else if (ang == 270) {
+        return bounds[2] - y;
+    }
+}
+
+// returns y for [bounds] cropped tetris layout after rotation by [ang] degrees
+function ty(x, y, bounds, ang) {
+    if (ang == 0) {
+        return y + bounds[1];
+    } else if (ang == 90) {
+        return bounds[3] - x;
+    } else if (ang == 180) {
+        return bounds[3] - y;
+    } else if (ang == 270) {
+        return x + bounds[1];
+    }
+}
+
 // Find a successful placement of tetris blocks specified in [cells] given the
 // available area cells [area]
 function findTetrisPlacement(area, cells) {
     if (cells.length == 0) return true;
     var cell = cells.shift();
 
-    var anchor = cellTetrisAnchors[cell.x][cell.y];
+    var bounds = cellTetrisBounds[cell.x][cell.y];
     var layout = cellTetrisLayouts[cell.x][cell.y];
 
     // Try every possible viable placement
-    for (var topLeft of area) {
-        var viable = true;
-        var remainingArea = new Set(area);
+    var maxAng = cellTypes[cell.x][cell.y] == CELL_TYPE.TETRIS_ROTATED ? 270 : 0;
 
-        for (var xx = anchor[0]; xx < 4 && viable; xx++) {
-            for (var yy = anchor[1]; yy < 4 && viable; yy++) {
-                if (layout[xx][yy]) {
-                    var n = node(topLeft.x + xx, topLeft.y + yy);
+    var yesyesyes = true;
+    for (var c of area) {
+        if (c.y != 2) yesyesyes = false;
+    }
+    yesyesyes &= area.size == 5;
+    yesyesyes &= cell.x == 2 && cell.y == 2;
 
-                    remainingArea.delete(n);
+    for (var ang = 0; ang <= maxAng; ang += 90) {
+        for (var topLeft of area) {
+            var viable = true;
+            var remainingArea = new Set(area);
 
-                    if (!area.has(n)) {
-                        viable = false;
+            for (var dx = 0; dx < 4 && viable; dx++) {
+                for (var dy = 0; dy < 4 && viable; dy++) {
+                    var xx = tx(dx, dy, bounds, ang);
+                    var yy = ty(dx, dy, bounds, ang);
+
+                    if (xx < bounds[0] || xx > bounds[2] || yy < bounds[1] || yy > bounds[3]) {
+                        break;
+                    }
+
+                    if (xx >= bounds[0] && yy >= bounds[1] && xx <= bounds[2] && yy <= bounds[3] && layout[xx][yy]) {
+                        var n = node(topLeft.x + dx, topLeft.y + dy);
+
+                        remainingArea.delete(n);
+
+                        if (!area.has(n)) {
+                            viable = false;
+                        }
                     }
                 }
             }
-        }
 
-        // If a viable placement was found, continue with the remaining blocks
-        if (viable && findTetrisPlacement(remainingArea, cells.slice())) {
-            return true;
+            // If a viable placement was found, continue with the remaining blocks
+            if (viable && findTetrisPlacement(remainingArea, cells.slice())) {
+                return true;
+            }
         }
     }
 

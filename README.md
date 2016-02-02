@@ -79,6 +79,4 @@ To do
 -----
 
 - Make tetris solver to handle irregular grids
-- Improve performance of tetris puzzle solving (chokes on 5x5 swamp puzzles)
-- Solve puzzles with tetris blocks that can be rotated
 - Solve other puzzles
