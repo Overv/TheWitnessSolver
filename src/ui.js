@@ -487,8 +487,8 @@ $('#clear-button').click(clearSolution);
 
 var gridSizeSelector = $('#grid-size-selector');
 
-for (var x = 1; x <= 5; x++) {
-    for (var y = 1; y <= 5; y++) {
+for (var x = 1; x <= 6; x++) {
+    for (var y = 1; y <= 6; y++) {
         var el = $('<option value="' + (x + 1) + ',' + (y + 1) + '">' + x + ' x ' + y + '</option>')
             .appendTo(gridSizeSelector);
     }
