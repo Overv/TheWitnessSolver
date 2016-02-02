@@ -147,8 +147,53 @@ function verEdgeExists(x, y) {
     return verEdges[x][y];
 }
 
+// Update URL that allows people to link puzzles
+function updateURL() {
+    var encoding = {
+        gridWidth: gridWidth,
+        gridHeight: gridHeight,
+        horEdges: horEdges,
+        verEdges: verEdges,
+        nodeTypes: nodeTypes,
+        cellTypes: cellTypes,
+        cellTetrisLayouts: cellTetrisLayouts,
+        cellTetrisAreas: cellTetrisAreas,
+        cellTetrisBounds: cellTetrisBounds
+    };
+
+    encoding = btoa(JSON.stringify(encoding));
+
+    location.hash = '#' + encoding;
+}
+
+function parseFromURL() {
+    try {
+        var encoding = JSON.parse(atob(location.hash.substr(1)));
+
+        gridWidth = encoding['gridWidth'];
+        gridHeight = encoding['gridHeight'];
+        horEdges = encoding['horEdges'];
+        verEdges = encoding['verEdges'];
+        nodeTypes = encoding['nodeTypes'];
+        cellTypes = encoding['cellTypes'];
+        cellTetrisLayouts = encoding['cellTetrisLayouts'];
+        cellTetrisAreas = encoding['cellTetrisAreas'];
+        cellTetrisBounds = encoding['cellTetrisBounds'];
+
+        updateVisualGrid();
+
+        return true;
+    } catch (e) {
+        alert('Invalid puzzle URL provided! Displaying the default puzzle.');
+
+        return false;
+    }
+}
+
 // Update visualization of grid
 function updateVisualGrid() {
+    updateURL();
+
     // Remove old grid
     $('svg').empty();
 
@@ -946,32 +991,34 @@ function findSolution(path, visited, required, exitsRemaining, areas, segment) {
 initGrid();
 
 // Sample puzzle from swamp area
-verEdges[2][1] = false;
-nodeTypes[0][4] = NODE_TYPE.START;
-nodeTypes[4][0] = NODE_TYPE.EXIT;
-cellTypes[0][1] = CELL_TYPE.TETRIS;
-cellTypes[1][3] = CELL_TYPE.TETRIS;
-cellTypes[2][3] = CELL_TYPE.TETRIS;
+if (location.hash.length == 0 || !parseFromURL()) {
+    verEdges[2][1] = false;
+    nodeTypes[0][4] = NODE_TYPE.START;
+    nodeTypes[4][0] = NODE_TYPE.EXIT;
+    cellTypes[0][1] = CELL_TYPE.TETRIS;
+    cellTypes[1][3] = CELL_TYPE.TETRIS;
+    cellTypes[2][3] = CELL_TYPE.TETRIS;
 
-for (var xx = 0; xx < 4; xx++) {
-    for (var yy = 0; yy < 4; yy++) {
-        cellTetrisLayouts[0][1][xx][yy] = false;
-        cellTetrisLayouts[1][3][xx][yy] = false;
-        cellTetrisLayouts[2][3][xx][yy] = false;
+    for (var xx = 0; xx < 4; xx++) {
+        for (var yy = 0; yy < 4; yy++) {
+            cellTetrisLayouts[0][1][xx][yy] = false;
+            cellTetrisLayouts[1][3][xx][yy] = false;
+            cellTetrisLayouts[2][3][xx][yy] = false;
+        }
     }
+
+    for (var xx = 0; xx < 4; xx++) cellTetrisLayouts[0][1][xx][0] = true;
+    for (var yy = 0; yy < 3; yy++) {
+        cellTetrisLayouts[1][3][0][yy] = true;
+        cellTetrisLayouts[2][3][0][yy] = true;
+    }
+
+    updateTetrisLayoutProperties(0, 1);
+    updateTetrisLayoutProperties(1, 3);
+    updateTetrisLayoutProperties(2, 3);
+
+    updateVisualGrid();
 }
-
-for (var xx = 0; xx < 4; xx++) cellTetrisLayouts[0][1][xx][0] = true;
-for (var yy = 0; yy < 3; yy++) {
-    cellTetrisLayouts[1][3][0][yy] = true;
-    cellTetrisLayouts[2][3][0][yy] = true;
-}
-
-updateTetrisLayoutProperties(0, 1);
-updateTetrisLayoutProperties(1, 3);
-updateTetrisLayoutProperties(2, 3);
-
-updateVisualGrid();
 
 // Set up UI controls
 $('#solve-button').click(function() { solve(); });
