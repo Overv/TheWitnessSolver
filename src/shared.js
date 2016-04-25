@@ -43,6 +43,18 @@ function point(x, y) {
     return pointPool[x][y];
 }
 
+var edgePool = [];
+
+// x and y are the left top point of a edge. ori is orientation
+function edge(x, y, ori) {
+	ori = ori == '-' ? 0 : 1;// '-' :Horizontal, '|':Vertical
+    if (!edgePool[x]) edgePool[x] = [];
+    if (!edgePool[x][y]) edgePool[x][y] = {x: x, y: y};
+	if (!edgePool[x][y][ori]) edgePool[x][y][ori] = {x: x, y: y, ori: ori};
+
+    return edgePool[x][y][ori];
+}
+
 function create2DArray(w, h) {
     var arr = [];
 
@@ -142,10 +154,10 @@ function updateTetrisLayoutProperties(x, y) {
 
 function horEdgeExists(x, y) {
     if (x < 0 || y < 0 || x >= puzzle.width - 1 || y >= puzzle.height) return false;
-    return puzzle.horEdges[x][y];
+    return puzzle.horEdges[x][y] != EDGE_TYPE.OBSTACLE;
 }
 
 function verEdgeExists(x, y) {
     if (x < 0 || y < 0 || x >= puzzle.width || y >= puzzle.height - 1) return false;
-    return puzzle.verEdges[x][y];
+    return puzzle.verEdges[x][y] != EDGE_TYPE.OBSTACLE;
 }

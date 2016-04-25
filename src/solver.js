@@ -80,6 +80,44 @@ function checkRequiredNodes(path, required) {
     return true;
 }
 
+function checkRequiredEdges(path, edgeRequired) {
+	console.log(path);
+	// Check if all required edges are part of the path
+	if (edgeRequired == null) return true;
+    for (var n of edgeRequired) {
+        // wha?
+		console.log(n);
+		if (n.ori == 1) { //Vertical
+			var flag = false;
+			for(var i = 0; i < path.length-1; i++) {
+				if((path[i].x == n.x && path[i].y == n.y &&
+					path[i+1].x == n.x && path[i+1].y == n.y + 1 )
+					||(path[i+1].x == n.x && path[i+1].y == n.y &&
+					path[i].x == n.x && path[i].y == n.y + 1 )) {
+					flag = true;
+					break;
+				}
+			}
+			if (flag == false) return false;
+		} else { //Horizontal
+			var flag = false;
+			for(var i = 0; i < path.length-1; i++) {
+				if((path[i].x == n.x && path[i].y == n.y &&
+					path[i+1].x == n.x + 1 && path[i+1].y == n.y )
+					||(path[i+1].x == n.x && path[i+1].y == n.y &&
+					path[i].x == n.x + 1 && path[i].y == n.y )) {
+					flag = true;
+					break;
+				}
+			}
+			if (flag == false) return false;
+		}
+    }
+	
+	return true;
+}
+
+
 function isOuterpoint(n) {
     return n.x == 0 || n.y == 0 || n.x == puzzle.width - 1 || n.y == puzzle.height - 1;
 }
@@ -446,7 +484,29 @@ function getNodesByType(type) {
     return nodes;
 }
 
-function findSolution(path, visited, required, exitsRemaining, areas, segment) {
+function getEdgesByType(type) {
+	var edges = [];
+	
+    for (var x = 0; x < puzzle.width - 1; x++) {
+		for (var y = 0; y < puzzle.height; y++) { 
+			if (puzzle.horEdges[x][y]==type) {
+				edges.push(edge(x, y, '-'));
+			}
+		}
+	}
+	
+    for (var x = 0; x < puzzle.width; x++) {
+		for (var y = 0; y < puzzle.height - 1; y++) {
+			if (puzzle.verEdges[x][y]==type) {
+				edges.push(edge(x, y, '|'));
+			}
+		}
+	}
+	
+	return edges;
+}
+
+function findSolution(path, visited, required, edgeRequired, exitsRemaining, areas, segment) {
     if (!required) {
         required = determineAuxilaryRequired();
 
@@ -455,12 +515,21 @@ function findSolution(path, visited, required, exitsRemaining, areas, segment) {
         }
 
         exitsRemaining = getNodesByType(NODE_TYPE.EXIT).length;
+		
+		// Extra processing stuff
+		// Edge should be checked so we get edge set here.
+		// We will check edge at checkRequiredEdges()
+		edgeRequired = new Set();
+		
+		for (var n of getEdgesByType(EDGE_TYPE.REQUIRED)) {
+            edgeRequired.add(n);
+        }
     }
 
     if (!path || path.length == 0) {
         // If this is the first call, recursively try every starting node
         for (var n of getNodesByType(NODE_TYPE.START)) {
-            var fullPath = findSolution([n], new Set([n]), required, exitsRemaining, areas, segment);
+            var fullPath = findSolution([n], new Set([n]), required, edgeRequired, exitsRemaining, areas, segment);
 
             if (fullPath) {
                 return fullPath;
@@ -489,7 +558,7 @@ function findSolution(path, visited, required, exitsRemaining, areas, segment) {
         // If we're at an exit node and the partial solution along with the last
         // area is correct, then the full solution is correct
         if (puzzle.nodes[cn.x][cn.y].type == NODE_TYPE.EXIT) {
-            if (checkLastArea(prevn, cn, areas, segment) && checkRequiredNodes(path, required)) {
+            if (checkLastArea(prevn, cn, areas, segment) && checkRequiredNodes(path, required) && checkRequiredEdges(path, edgeRequired)) {
                 return path;
             } else {
                 exitsRemaining--;
@@ -509,7 +578,7 @@ function findSolution(path, visited, required, exitsRemaining, areas, segment) {
             var newVisited = new Set(visited);
             newVisited.add(n);
 
-            var fullPath = findSolution(newPath, newVisited, required, exitsRemaining, areas, segment);
+            var fullPath = findSolution(newPath, newVisited, required, edgeRequired, exitsRemaining, areas, segment);
 
             if (fullPath) {
                 return fullPath;
