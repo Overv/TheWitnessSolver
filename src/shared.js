@@ -9,6 +9,15 @@ var NODE_TYPE = {
     'LAST': 3
 };
 
+var EDGE_TYPE = {
+    'NORMAL': 0,
+    'REQUIRED': 1,
+	'OBSTACLE': 2,
+
+    // Used in UI to loop around
+    'LAST': 2
+};
+
 var CELL_TYPE = {
     'NONE': 0,
     'BLACK': 1,
@@ -74,7 +83,7 @@ function initEdges(puzzle) {
 
     for (var x = 0; x < puzzle.width - 1; x++) {
         for (var y = 0; y < puzzle.height; y++) {
-            puzzle.horEdges[x][y] = true;
+            puzzle.horEdges[x][y] = EDGE_TYPE.NORMAL;
         }
     }
 
@@ -82,7 +91,7 @@ function initEdges(puzzle) {
 
     for (var x = 0; x < puzzle.width; x++) {
         for (var y = 0; y < puzzle.height - 1; y++) {
-            puzzle.verEdges[x][y] = true;
+            puzzle.verEdges[x][y] = EDGE_TYPE.NORMAL;
         }
     }
 }
