@@ -12,7 +12,7 @@ var NODE_TYPE = {
 var EDGE_TYPE = {
     'NORMAL': 0,
     'REQUIRED': 1,
-	'OBSTACLE': 2,
+  	'OBSTACLE': 2,
 
     // Used in UI to loop around
     'LAST': 2
@@ -28,6 +28,12 @@ var CELL_TYPE = {
     // Used in UI to loop around
     'LAST': 4
 };
+
+// Helpers
+var ORIENTATION_TYPE = {
+    'HOR': 0, // Horizontal
+    'VER': 1  // Vertical
+}
 
 // Puzzle definition
 var puzzle = {};
@@ -47,7 +53,7 @@ var edgePool = [];
 
 // x and y are the left top point of a edge. ori is orientation
 function edge(x, y, ori) {
-	ori = ori == '-' ? 0 : 1;// '-' :Horizontal, '|':Vertical
+	ori = ori == ORIENTATION_TYPE.HOR ? 0 : 1;
     if (!edgePool[x]) edgePool[x] = [];
     if (!edgePool[x][y]) edgePool[x][y] = {x: x, y: y};
 	if (!edgePool[x][y][ori]) edgePool[x][y][ori] = {x: x, y: y, ori: ori};

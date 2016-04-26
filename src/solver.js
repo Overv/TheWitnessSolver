@@ -81,13 +81,11 @@ function checkRequiredNodes(path, required) {
 }
 
 function checkRequiredEdges(path, edgeRequired) {
-	console.log(path);
 	// Check if all required edges are part of the path
 	if (edgeRequired == null) return true;
     for (var n of edgeRequired) {
-        // wha?
-		console.log(n);
-		if (n.ori == 1) { //Vertical
+    // wha?
+		if (n.ori == ORIENTATION_TYPE.VER) { //Vertical
 			var flag = false;
 			for(var i = 0; i < path.length-1; i++) {
 				if((path[i].x == n.x && path[i].y == n.y &&
@@ -113,7 +111,7 @@ function checkRequiredEdges(path, edgeRequired) {
 			if (flag == false) return false;
 		}
     }
-	
+
 	return true;
 }
 
@@ -486,23 +484,23 @@ function getNodesByType(type) {
 
 function getEdgesByType(type) {
 	var edges = [];
-	
+
     for (var x = 0; x < puzzle.width - 1; x++) {
-		for (var y = 0; y < puzzle.height; y++) { 
+		for (var y = 0; y < puzzle.height; y++) {
 			if (puzzle.horEdges[x][y]==type) {
-				edges.push(edge(x, y, '-'));
+				edges.push(edge(x, y, ORIENTATION_TYPE.HOR));
 			}
 		}
 	}
-	
+
     for (var x = 0; x < puzzle.width; x++) {
 		for (var y = 0; y < puzzle.height - 1; y++) {
 			if (puzzle.verEdges[x][y]==type) {
-				edges.push(edge(x, y, '|'));
+				edges.push(edge(x, y, ORIENTATION_TYPE.VER));
 			}
 		}
 	}
-	
+
 	return edges;
 }
 
@@ -515,12 +513,12 @@ function findSolution(path, visited, required, edgeRequired, exitsRemaining, are
         }
 
         exitsRemaining = getNodesByType(NODE_TYPE.EXIT).length;
-		
+
 		// Extra processing stuff
 		// Edge should be checked so we get edge set here.
 		// We will check edge at checkRequiredEdges()
 		edgeRequired = new Set();
-		
+
 		for (var n of getEdgesByType(EDGE_TYPE.REQUIRED)) {
             edgeRequired.add(n);
         }
