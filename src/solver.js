@@ -81,38 +81,38 @@ function checkRequiredNodes(path, required) {
 }
 
 function checkRequiredEdges(path, edgeRequired) {
-	// Check if all required edges are part of the path
-	if (edgeRequired == null) return true;
+    // Check if all required edges are part of the path
+    if (edgeRequired == null) return true;
     for (var n of edgeRequired) {
     // wha?
-		if (n.ori == ORIENTATION_TYPE.VER) { //Vertical
-			var flag = false;
-			for(var i = 0; i < path.length-1; i++) {
-				if((path[i].x == n.x && path[i].y == n.y &&
-					path[i+1].x == n.x && path[i+1].y == n.y + 1 )
-					||(path[i+1].x == n.x && path[i+1].y == n.y &&
-					path[i].x == n.x && path[i].y == n.y + 1 )) {
-					flag = true;
-					break;
-				}
-			}
-			if (flag == false) return false;
-		} else { //Horizontal
-			var flag = false;
-			for(var i = 0; i < path.length-1; i++) {
-				if((path[i].x == n.x && path[i].y == n.y &&
-					path[i+1].x == n.x + 1 && path[i+1].y == n.y )
-					||(path[i+1].x == n.x && path[i+1].y == n.y &&
-					path[i].x == n.x + 1 && path[i].y == n.y )) {
-					flag = true;
-					break;
-				}
-			}
-			if (flag == false) return false;
-		}
+        if (n.ori == ORIENTATION_TYPE.VER) { //Vertical
+            var flag = false;
+            for(var i = 0; i < path.length-1; i++) {
+                if((path[i].x == n.x && path[i].y == n.y &&
+                    path[i+1].x == n.x && path[i+1].y == n.y + 1 )
+                    ||(path[i+1].x == n.x && path[i+1].y == n.y &&
+                    path[i].x == n.x && path[i].y == n.y + 1 )) {
+                    flag = true;
+                    break;
+                }
+            }
+            if (flag == false) return false;
+        } else { //Horizontal
+            var flag = false;
+            for(var i = 0; i < path.length-1; i++) {
+                if((path[i].x == n.x && path[i].y == n.y &&
+                    path[i+1].x == n.x + 1 && path[i+1].y == n.y )
+                    ||(path[i+1].x == n.x && path[i+1].y == n.y &&
+                    path[i].x == n.x + 1 && path[i].y == n.y )) {
+                    flag = true;
+                    break;
+                }
+            }
+            if (flag == false) return false;
+        }
     }
 
-	return true;
+    return true;
 }
 
 
@@ -483,25 +483,25 @@ function getNodesByType(type) {
 }
 
 function getEdgesByType(type) {
-	var edges = [];
+    var edges = [];
 
     for (var x = 0; x < puzzle.width - 1; x++) {
-		for (var y = 0; y < puzzle.height; y++) {
-			if (puzzle.horEdges[x][y]==type) {
-				edges.push(edge(x, y, ORIENTATION_TYPE.HOR));
-			}
-		}
-	}
+        for (var y = 0; y < puzzle.height; y++) {
+            if (puzzle.horEdges[x][y]==type) {
+                edges.push(edge(x, y, ORIENTATION_TYPE.HOR));
+            }
+        }
+    }
 
     for (var x = 0; x < puzzle.width; x++) {
-		for (var y = 0; y < puzzle.height - 1; y++) {
-			if (puzzle.verEdges[x][y]==type) {
-				edges.push(edge(x, y, ORIENTATION_TYPE.VER));
-			}
-		}
-	}
+        for (var y = 0; y < puzzle.height - 1; y++) {
+            if (puzzle.verEdges[x][y]==type) {
+                edges.push(edge(x, y, ORIENTATION_TYPE.VER));
+            }
+        }
+    }
 
-	return edges;
+    return edges;
 }
 
 function findSolution(path, visited, required, edgeRequired, exitsRemaining, areas, segment) {
@@ -514,12 +514,12 @@ function findSolution(path, visited, required, edgeRequired, exitsRemaining, are
 
         exitsRemaining = getNodesByType(NODE_TYPE.EXIT).length;
 
-		// Extra processing stuff
-		// Edge should be checked so we get edge set here.
-		// We will check edge at checkRequiredEdges()
-		edgeRequired = new Set();
+        // Extra processing stuff
+        // Edge should be checked so we get edge set here.
+        // We will check edge at checkRequiredEdges()
+        edgeRequired = new Set();
 
-		for (var n of getEdgesByType(EDGE_TYPE.REQUIRED)) {
+        for (var n of getEdgesByType(EDGE_TYPE.REQUIRED)) {
             edgeRequired.add(n);
         }
     }

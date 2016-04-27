@@ -12,7 +12,7 @@ var NODE_TYPE = {
 var EDGE_TYPE = {
     'NORMAL': 0,
     'REQUIRED': 1,
-  	'OBSTACLE': 2,
+    'OBSTACLE': 2,
 
     // Used in UI to loop around
     'LAST': 2
@@ -53,10 +53,10 @@ var edgePool = [];
 
 // x and y are the left top point of a edge. ori is orientation
 function edge(x, y, ori) {
-	ori = ori == ORIENTATION_TYPE.HOR ? 0 : 1;
+    ori = ori == ORIENTATION_TYPE.HOR ? 0 : 1;
     if (!edgePool[x]) edgePool[x] = [];
     if (!edgePool[x][y]) edgePool[x][y] = {x: x, y: y};
-	if (!edgePool[x][y][ori]) edgePool[x][y][ori] = {x: x, y: y, ori: ori};
+    if (!edgePool[x][y][ori]) edgePool[x][y][ori] = {x: x, y: y, ori: ori};
 
     return edgePool[x][y][ori];
 }

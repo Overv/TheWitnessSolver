@@ -239,14 +239,14 @@ function addVisualGridEdges(drawHighlighted) {
                 path += 'l ' + hr + ' ' + r;
 
                 $('<path />')
-					.attr('class', 'edge')
-					.attr('data-type', 'hor-edge')
+                    .attr('class', 'edge')
+                    .attr('data-type', 'hor-edge')
                     .attr('data-x', x)
                     .attr('data-y', y)
                     .css('fill', highlightedNodes.has(point(x, y)) ? '#B1F514' : 'black')
                     .attr('d', path)
                     .appendTo(gridEl);
-			}
+            }
         }
     }
 
@@ -291,14 +291,14 @@ function addVisualGridEdges(drawHighlighted) {
                 path += 'l ' + hr + ' ' + r;
 
                 $('<path />')
-					.attr('class', 'edge')
-					.attr('data-type', 'ver-edge')
+                    .attr('class', 'edge')
+                    .attr('data-type', 'ver-edge')
                     .attr('data-x', x)
                     .attr('data-y', y)
                     .css('fill', highlightedNodes.has(point(x, y)) ? '#B1F514' : 'black')
                     .attr('d', path)
                     .appendTo(gridEl);
-			}
+            }
         }
     }
 }
