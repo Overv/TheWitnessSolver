@@ -58,8 +58,8 @@ function updateURL() {
     var encoding = {
         gridWidth: puzzle.width,
         gridHeight: puzzle.height,
-        horEdges: deepMap(puzzle.horEdges, bool2num),
-        verEdges: deepMap(puzzle.verEdges, bool2num),
+        horEdges: deepMap(puzzle.horEdges, function(n) { return n; }),
+        verEdges: deepMap(puzzle.verEdges, function(n) { return n; }),
         nodeTypes: deepMap(puzzle.nodes, function(n) { return n.type; }),
         cellTypes: deepMap(puzzle.cells, function(c) { return c.type; }),
         cellTetrisLayouts: deepMap(deepMap(puzzle.cells, function(c) { return c.tetris; }), bool2num),
@@ -78,8 +78,8 @@ function parseFromURL() {
 
         initPuzzle(puzzle, encoding['gridWidth'], encoding['gridHeight']);
 
-        puzzle.horEdges = deepMap(encoding['horEdges'], num2bool);
-        puzzle.verEdges = deepMap(encoding['verEdges'], num2bool);
+        puzzle.horEdges = deepMap(encoding['horEdges'], function(t) { return t; });
+        puzzle.verEdges = deepMap(encoding['verEdges'], function(t) { return t; });
         puzzle.nodes = deepMap(encoding['nodeTypes'], function(t) { return {type: t}; });
         puzzle.cells = deepMap(encoding['cellTypes'], function(t) { return {type: t}; });
 
@@ -217,13 +217,34 @@ function addVisualGridEdges(drawHighlighted) {
                 .css('fill', highlighted ? '#B1F514' : '#026223')
                 .appendTo(gridEl);
 
-            if (!puzzle.horEdges[x][y]) {
+            if (puzzle.horEdges[x][y]==EDGE_TYPE.OBSTACLE) {
                 baseEl.clone()
                     .attr('x', nodeX(x) + spacing / 2 - radius)
                     .attr('width', radius * 2)
                     .attr('y', nodeY(y) - radius - 2)
                     .attr('height', radius * 2 + 4)
                     .css('fill', '#00E94F')
+                    .appendTo(gridEl);
+            } else if (puzzle.horEdges[x][y]==EDGE_TYPE.REQUIRED) {
+                var r = radius * 0.8;
+                var hr = radius * 0.5;
+
+                var path = '';
+                path += 'M ' + (nodeX(x) + spacing / 2 + radius) + ' ' + (nodeY(y) );
+                path += 'l ' + (-hr) + ' ' + r;
+                path += 'h ' + (-r);
+                path += 'l ' + (-hr) + ' ' + (-r);
+                path += 'l ' + hr + ' ' + (-r);
+                path += 'h ' + r;
+                path += 'l ' + hr + ' ' + r;
+
+                $('<path />')
+                    .attr('class', 'edge')
+                    .attr('data-type', 'hor-edge')
+                    .attr('data-x', x)
+                    .attr('data-y', y)
+                    .css('fill', highlightedNodes.has(point(x, y)) ? '#B1F514' : 'black')
+                    .attr('d', path)
                     .appendTo(gridEl);
             }
         }
@@ -248,13 +269,34 @@ function addVisualGridEdges(drawHighlighted) {
                 .css('fill', highlighted ? '#B1F514' : '#026223')
                 .appendTo(gridEl);
 
-            if (!puzzle.verEdges[x][y]) {
+            if (puzzle.verEdges[x][y]==EDGE_TYPE.OBSTACLE) {
                 baseEl.clone()
                     .attr('y', nodeY(y) + spacing / 2 - radius)
                     .attr('height', radius * 2)
                     .attr('x', nodeX(x) - radius - 2)
                     .attr('width', radius * 2 + 4)
                     .css('fill', '#00E94F')
+                    .appendTo(gridEl);
+            } else if (puzzle.verEdges[x][y]==EDGE_TYPE.REQUIRED) {
+                var r = radius * 0.8;
+                var hr = radius * 0.5;
+
+                var path = '';
+                path += 'M ' + (nodeX(x) + radius - 2) + ' ' + (nodeY(y) + spacing / 2 );
+                path += 'l ' + (-hr) + ' ' + r;
+                path += 'h ' + (-r);
+                path += 'l ' + (-hr) + ' ' + (-r);
+                path += 'l ' + hr + ' ' + (-r);
+                path += 'h ' + r;
+                path += 'l ' + hr + ' ' + r;
+
+                $('<path />')
+                    .attr('class', 'edge')
+                    .attr('data-type', 'ver-edge')
+                    .attr('data-x', x)
+                    .attr('data-y', y)
+                    .css('fill', highlightedNodes.has(point(x, y)) ? '#B1F514' : 'black')
+                    .attr('d', path)
                     .appendTo(gridEl);
             }
         }
@@ -385,9 +427,9 @@ function addGridEventHandlers() {
         var y = +this.getAttribute('data-y');
         
         if (type == 'hor-edge') {
-            puzzle.horEdges[x][y] = !puzzle.horEdges[x][y];
+            puzzle.horEdges[x][y] =  (puzzle.horEdges[x][y] + 1) % (EDGE_TYPE.LAST + 1);
         } else if (type == 'ver-edge') {
-            puzzle.verEdges[x][y] = !puzzle.verEdges[x][y];
+            puzzle.verEdges[x][y] = (puzzle.verEdges[x][y] + 1) % (EDGE_TYPE.LAST + 1);
         }
 
         updateVisualGrid();
@@ -530,7 +572,7 @@ function initialize() {
     if (location.hash.length == 0 || !parseFromURL()) {
         initPuzzle(puzzle, 5, 5);
 
-        puzzle.verEdges[2][1] = false;
+        puzzle.verEdges[2][1] = EDGE_TYPE.OBSTACLE;
         puzzle.nodes[0][4].type = NODE_TYPE.START;
         puzzle.nodes[4][0].type = NODE_TYPE.EXIT;
         puzzle.cells[0][1].type = CELL_TYPE.TETRIS;
