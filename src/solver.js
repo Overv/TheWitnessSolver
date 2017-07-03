@@ -641,17 +641,6 @@ function getEdgesByType(type) {
     return edges;
 }
 
-function puzzleHasCancellation() {
-    for (var x = 0; x < puzzle.cells.length; x ++) {
-        for (var y = 0; y < puzzle.cells[x].length; y ++) {
-            if (puzzle.cells[x][y].type == CELL_TYPE.CANCELLATION) {
-                return true;
-            }
-        }
-    }
-    return false;
-}
-
 function findSolution(path, visited, required, edgeRequired, exitsRemaining, areas, segment) {
 
     if (!required) {
