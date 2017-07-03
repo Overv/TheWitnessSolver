@@ -24,9 +24,10 @@ var CELL_TYPE = {
     'TETRIS': 2,
     'TETRIS_ROTATED': 3,
     'SUN': 4,
+    'CANCELLATION': 5,
 
     // Used in UI to loop around
-    'LAST': 4
+    'LAST': 5
 };
 
 var CELL_COLOR = {
@@ -196,4 +197,22 @@ function horEdgeExists(x, y) {
 function verEdgeExists(x, y) {
     if (x < 0 || y < 0 || x >= puzzle.width || y >= puzzle.height - 1) return false;
     return puzzle.verEdges[x][y] != EDGE_TYPE.OBSTACLE;
+}
+
+function powerSet(list) {
+    var set = [],
+        listSize = list.length,
+        combinationsCount = (1 << listSize),
+        combination;
+
+    for (var i = 0; i < combinationsCount ; i++ ){
+        var combination = [];
+        for (var j=0;j<listSize;j++){
+            if ((i & (1 << j))){
+                combination.push(list[j]);
+            }
+        }
+        set.push(combination);
+    }
+    return set;
 }

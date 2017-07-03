@@ -148,81 +148,6 @@ function getLeftRight(cur, next) {
     }
 }
 
-function checkSegregation(area) {
-    var cmp = {type: CELL_TYPE.NONE, color: CELL_COLOR.BLACK};
-
-    for (var c of area) {
-        if (puzzle.cells[c.x][c.y].type == CELL_TYPE.SQUARE) {
-            if (!colorsCompatible(cmp, puzzle.cells[c.x][c.y])) {
-                return false;
-            }
-
-            cmp = puzzle.cells[c.x][c.y];
-        }
-    }
-
-    return true;
-}
-
-function checkSuns(area) {
-
-    // Suns rule:
-    // If a sun of color X is in a region, there must be EXACTLY TWO items
-    // of color X in that region
-
-    var sunPresent = {};
-    var count = {};
-    for (var colorname in CELL_COLOR) {
-        value = CELL_COLOR[colorname];
-        sunPresent[value] = false;
-        count[value] = 0;
-    }
-
-    for (var c of area) {
-        if (puzzle.cells[c.x][c.y].type == CELL_TYPE.SUN) {
-            var colorVal = puzzle.cells[c.x][c.y].color;
-            sunPresent[colorVal] = true;
-        }
-    }
-
-    for (var c of area) {
-        if (puzzle.cells[c.x][c.y].type != CELL_TYPE.NONE) {
-            var colorVal = puzzle.cells[c.x][c.y].color;
-            count[colorVal] += 1;
-        }
-    }
-
-    for (var colorname in CELL_COLOR) {
-        value = CELL_COLOR[colorname];
-        if (sunPresent[value]) {
-            if (count[value] != 2) {
-                return false;
-            }
-        }
-    }
-
-    return true;
-}
-
-function checkTetrisArea(area) {
-    var areaCells = 0;
-    var tetrisBlocks = 0;
-
-    for (var c of area) {
-        areaCells++;
-
-        if (puzzle.cells[c.x][c.y].type == CELL_TYPE.TETRIS || puzzle.cells[c.x][c.y].type == CELL_TYPE.TETRIS_ROTATED) {
-            tetrisBlocks += puzzle.cells[c.x][c.y].tetrisArea;
-        }
-    }
-
-    if (tetrisBlocks > 0 && tetrisBlocks != areaCells) {
-        return false;
-    } else {
-        return true;
-    }
-}
-
 function separateAreasStep(last, cur, areas, segment) {
     // Start with 1 area: the entire grid
     if (!areas) {
@@ -338,18 +263,189 @@ function checkLastArea(last, cur, areas, segment) {
 }
 
 function checkArea(area) {
-    return checkSuns(area) &&
-           checkSegregation(area) &&
-           checkTetrisArea(area) &&
-           checkTetris(area);
+
+    // Cancellation rule:
+    // Let N be the number of cell entities in the region
+    // Let K be the number of cancellation icons in the region
+    // Validation must pass IF AND ONLY IF (N-K) objects other
+    // than the cancellation icons are removed from the region.
+    // This is not computationally friendly, to say the least.
+
+    var cancellationCount = countCancellations(area);
+
+    if (cancellationCount == 0) {
+        return validateAreaPlain(area);
+    }
+
+    // Otherwise, here we go...
+
+    var nonempty = getNonCancellationCellsInRegion(area);
+
+    var indexChoices = [];
+    for (var i = 0; i < nonempty.length; i ++) indexChoices.push(i);
+    var indexSets = powerSet(indexChoices);
+
+    var currentRemovalNumber = 0;
+    var success = false;
+
+    while (currentRemovalNumber <= cancellationCount) {
+
+        // For every choice of currentRemovalNumber elements from nonempty,
+        // ensure that validation fails, until we remove exactly
+        // cancellationCount, then it should pass on at least some configuration
+
+        for (var choice of indexSets) {
+            if (choice.length == currentRemovalNumber) {
+
+                clearIgnoreFlag(area);
+
+                for (var index of choice) {
+                    nonempty[index].ignore = true;
+                }
+
+                var pass = validateAreaPlain(area);
+
+                if (currentRemovalNumber < cancellationCount) {
+                    if (pass) return false;
+                } else if (currentRemovalNumber == cancellationCount) {
+                    if (pass) {
+                        success = true;
+                        break;
+                    }
+                }
+
+            }
+        }
+
+        currentRemovalNumber += 1;
+    }
+
+    clearIgnoreFlag(area);
+
+    return success;
+
 }
 
+function clearIgnoreFlag(area) {
+    for (var c of area) {
+        c.ignore = false;
+    }
+}
+
+function getNonCancellationCellsInRegion(area) {
+    var ret = [];
+    for (var c of area) {
+        if (puzzle.cells[c.x][c.y].type != CELL_TYPE.NONE && puzzle.cells[c.x][c.y].type != CELL_TYPE.CANCELLATION) {
+            ret.push(c);
+        }
+    }
+    return ret;
+}
+
+function countCancellations(area) {
+    var count = 0;
+    for (var c of area) {
+        if (puzzle.cells[c.x][c.y].type == CELL_TYPE.CANCELLATION) {
+            count += 1;
+        }
+    }
+    return count;
+}
+
+function validateAreaPlain(area) {
+    return checkSuns(area) && checkSegregation(area) && checkTetrisArea(area) && checkTetris(area);
+}
+
+// Respects ignore flag
+function checkSegregation(area) {
+    var cmp = {type: CELL_TYPE.NONE, color: CELL_COLOR.BLACK};
+
+    for (var c of area) {
+        if (c.ignore) continue;
+        if (puzzle.cells[c.x][c.y].type == CELL_TYPE.SQUARE) {
+            if (!colorsCompatible(cmp, puzzle.cells[c.x][c.y])) {
+                return false;
+            }
+
+            cmp = puzzle.cells[c.x][c.y];
+        }
+    }
+
+    return true;
+}
+
+// Respects ignore flag
+function checkSuns(area) {
+
+    // Suns rule:
+    // If a sun of color X is in a region, there must be EXACTLY TWO items
+    // of color X in that region
+
+    var sunPresent = {};
+    var count = {};
+    for (var colorname in CELL_COLOR) {
+        value = CELL_COLOR[colorname];
+        sunPresent[value] = false;
+        count[value] = 0;
+    }
+
+    for (var c of area) {
+        if (c.ignore) continue;
+        if (puzzle.cells[c.x][c.y].type == CELL_TYPE.SUN) {
+            var colorVal = puzzle.cells[c.x][c.y].color;
+            sunPresent[colorVal] = true;
+        }
+    }
+
+    for (var c of area) {
+        if (c.ignore) continue;
+        if (puzzle.cells[c.x][c.y].type != CELL_TYPE.NONE) {
+            var colorVal = puzzle.cells[c.x][c.y].color;
+            count[colorVal] += 1;
+        }
+    }
+
+    for (var colorname in CELL_COLOR) {
+        value = CELL_COLOR[colorname];
+        if (sunPresent[value]) {
+            if (count[value] != 2) {
+                return false;
+            }
+        }
+    }
+
+    return true;
+}
+
+// Respects ignore flag
+function checkTetrisArea(area) {
+    var areaCells = 0;
+    var tetrisBlocks = 0;
+
+    for (var c of area) {
+        if (c.ignore) continue;
+        areaCells++;
+
+        if (puzzle.cells[c.x][c.y].type == CELL_TYPE.TETRIS || puzzle.cells[c.x][c.y].type == CELL_TYPE.TETRIS_ROTATED) {
+            tetrisBlocks += puzzle.cells[c.x][c.y].tetrisArea;
+        }
+    }
+
+    if (tetrisBlocks > 0 && tetrisBlocks != areaCells) {
+        return false;
+    } else {
+        return true;
+    }
+}
+
+// Respects ignore flag
 function checkTetris(area) {
     // For each area, try all possible positions of the tetris blocks contained
     // within and see if they fit (yes, solution verification is NP-complete!)
     var tetrisCells = [];
 
     for (var cell of area) {
+        if (cell.ignore) continue;
         if (puzzle.cells[cell.x][cell.y].type == CELL_TYPE.TETRIS || puzzle.cells[cell.x][cell.y].type == CELL_TYPE.TETRIS_ROTATED) {
             tetrisCells.push(cell);
         }
@@ -545,8 +641,21 @@ function getEdgesByType(type) {
     return edges;
 }
 
+function puzzleHasCancellation() {
+    for (var x = 0; x < puzzle.cells.length; x ++) {
+        for (var y = 0; y < puzzle.cells[x].length; y ++) {
+            if (puzzle.cells[x][y].type == CELL_TYPE.CANCELLATION) {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
 function findSolution(path, visited, required, edgeRequired, exitsRemaining, areas, segment) {
+
     if (!required) {
+
         required = determineAuxilaryRequired();
 
         for (var n of getNodesByType(NODE_TYPE.REQUIRED)) {
