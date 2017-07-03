@@ -149,15 +149,15 @@ function getLeftRight(cur, next) {
 }
 
 function checkSegregation(area) {
-    var color = CELL_TYPE.NONE;
+    var cmp = {type: CELL_TYPE.NONE, color: CELL_COLOR.BLACK};
 
     for (var c of area) {
-        if (puzzle.cells[c.x][c.y].type == CELL_TYPE.BLACK || puzzle.cells[c.x][c.y].type == CELL_TYPE.WHITE) {
-            if (!colorsCompatible(color, puzzle.cells[c.x][c.y].type)) {
+        if (puzzle.cells[c.x][c.y].type == CELL_TYPE.SQUARE) {
+            if (!colorsCompatible(cmp, puzzle.cells[c.x][c.y])) {
                 return false;
             }
 
-            color = puzzle.cells[c.x][c.y].type;
+            cmp = puzzle.cells[c.x][c.y];
         }
     }
 
@@ -437,9 +437,9 @@ function findTetrisPlacement(area, cells) {
 }
 
 function colorsCompatible(c1, c2) {
-    return (c1 != CELL_TYPE.BLACK && c1 != CELL_TYPE.WHITE) ||
-           (c2 != CELL_TYPE.BLACK && c2 != CELL_TYPE.WHITE) ||
-           c1 == c2;
+    return (c1.type != CELL_TYPE.SQUARE) ||
+           (c2.type != CELL_TYPE.SQUARE) ||
+           (c1.color == c2.color);
 }
 
 // Auxilary required nodes are an optimization feature for segregation puzzles.
@@ -452,13 +452,13 @@ function determineAuxilaryRequired() {
     for (var x = 0; x < puzzle.width - 1; x++) {
         for (var y = 0; y < puzzle.height - 1; y++) {
             // Right side
-            if (x < puzzle.width - 2 && !colorsCompatible(puzzle.cells[x][y].type, puzzle.cells[x + 1][y].type)) {
+            if (x < puzzle.width - 2 && !colorsCompatible(puzzle.cells[x][y], puzzle.cells[x + 1][y])) {
                 aux.add(point(x + 1, y));
                 aux.add(point(x + 1, y + 1));
             }
 
             // Bottom side
-            if (y < puzzle.height - 2 && !colorsCompatible(puzzle.cells[x][y].type, puzzle.cells[x][y + 1].type)) {
+            if (y < puzzle.height - 2 && !colorsCompatible(puzzle.cells[x][y], puzzle.cells[x][y + 1])) {
                 aux.add(point(x, y + 1));
                 aux.add(point(x + 1, y + 1));
             }

@@ -61,12 +61,13 @@ function updateURL() {
         horEdges: deepMap(puzzle.horEdges, function(n) { return n; }),
         verEdges: deepMap(puzzle.verEdges, function(n) { return n; }),
         nodeTypes: deepMap(puzzle.nodes, function(n) { return n.type; }),
-        cellTypes: deepMap(puzzle.cells, function(c) { return c.type; }),
+        cellTypes: deepMap(puzzle.cells, function(c) { return {type: c.type, color: c.color}}),
         cellTetrisLayouts: deepMap(deepMap(puzzle.cells, function(c) { return c.tetris; }), bool2num),
         cellTetrisAreas: deepMap(puzzle.cells, function(c) { return c.tetrisArea; }),
         cellTetrisBounds: deepMap(puzzle.cells, function(c) { return c.tetrisBounds; })
     };
 
+    console.log(puzzle);
     encoding = btoa(JSON.stringify(encoding));
 
     location.hash = '#' + encoding;
@@ -81,7 +82,7 @@ function parseFromURL() {
         puzzle.horEdges = deepMap(encoding['horEdges'], function(t) { return t; });
         puzzle.verEdges = deepMap(encoding['verEdges'], function(t) { return t; });
         puzzle.nodes = deepMap(encoding['nodeTypes'], function(t) { return {type: t}; });
-        puzzle.cells = deepMap(encoding['cellTypes'], function(t) { return {type: t}; });
+        puzzle.cells = deepMap(encoding['cellTypes'], function(t) { return t; });
 
         var cellTetrisLayouts = deepMap(encoding['cellTetrisLayouts'], num2bool);
         var cellTetrisAreas = encoding['cellTetrisAreas'];
@@ -144,8 +145,8 @@ function addVisualGridCells() {
                 .css('fill', 'rgba(0, 0, 0, 0)')
                 .appendTo(gridEl);
 
-            if (puzzle.cells[x][y].type == CELL_TYPE.BLACK || puzzle.cells[x][y].type == CELL_TYPE.WHITE) {
-                addVisualBlackWhiteCell(x, y, baseEl);
+            if (puzzle.cells[x][y].type == CELL_TYPE.SQUARE) {
+                addVisualSquareCell(x, y, baseEl);
             } else if (puzzle.cells[x][y].type == CELL_TYPE.TETRIS || puzzle.cells[x][y].type == CELL_TYPE.TETRIS_ROTATED) {
                 addVisualGridTetrisCell(x, y, baseEl);
             }
@@ -153,7 +154,7 @@ function addVisualGridCells() {
     }
 }
 
-function addVisualBlackWhiteCell(x, y, baseEl) {
+function addVisualSquareCell(x, y, baseEl) {
     var iconEl = baseEl.clone()
         .attr('x', nodeX(x) + spacing / 2 - spacing / 8)
         .attr('y', nodeY(y) + spacing / 2 - spacing / 8)
@@ -161,11 +162,7 @@ function addVisualBlackWhiteCell(x, y, baseEl) {
         .attr('height', spacing / 4)
         .appendTo(gridEl);
 
-    if (puzzle.cells[x][y].type == CELL_TYPE.BLACK) {
-        iconEl.css('fill', 'rgba(0, 0, 0, 0.9)');
-    } else {
-        iconEl.css('fill', 'white');
-    }
+    iconEl.css('fill', getColorString(puzzle.cells[x][y].color));
 }
 
 function addVisualGridTetrisCell(x, y, baseEl) {
@@ -184,7 +181,8 @@ function addVisualGridTetrisCell(x, y, baseEl) {
                 .attr('height', spacing / 8)
                 .attr('rx', 0)
                 .attr('ry', 0)
-                .css('fill', 'rgba(248, 222, 37, ' + a + ')')
+                .css('fill', getColorString(puzzle.cells[x][y].color))
+                .css('opacity', a)
                 .appendTo(gridEl);
 
             if (puzzle.cells[x][y].type == CELL_TYPE.TETRIS_ROTATED) {
@@ -395,6 +393,16 @@ function addGridEventHandlers() {
 
         updateVisualGrid();
     });
+    $('.cell').contextmenu(function (e) {
+        if (viewingSolution) return;
+
+        var x = +this.getAttribute('data-x');
+        var y = +this.getAttribute('data-y');
+
+        puzzle.cells[x][y].color = (puzzle.cells[x][y].color + 1) % (CELL_COLOR.LAST + 1);
+
+        updateVisualGrid();
+    });
 
     $('.tetris-cell').mouseup(function(e) {
         if (viewingSolution) return;
@@ -425,7 +433,7 @@ function addGridEventHandlers() {
         var type = this.getAttribute('data-type');
         var x = +this.getAttribute('data-x');
         var y = +this.getAttribute('data-y');
-        
+
         if (type == 'hor-edge') {
             puzzle.horEdges[x][y] =  (puzzle.horEdges[x][y] + 1) % (EDGE_TYPE.LAST + 1);
         } else if (type == 'ver-edge') {
