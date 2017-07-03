@@ -149,6 +149,8 @@ function addVisualGridCells() {
                 addVisualSquareCell(x, y, baseEl);
             } else if (puzzle.cells[x][y].type == CELL_TYPE.TETRIS || puzzle.cells[x][y].type == CELL_TYPE.TETRIS_ROTATED) {
                 addVisualGridTetrisCell(x, y, baseEl);
+            } else if (puzzle.cells[x][y].type == CELL_TYPE.SUN) {
+                addVisualSunCell(x, y, baseEl);
             }
         }
     }
@@ -193,6 +195,28 @@ function addVisualGridTetrisCell(x, y, baseEl) {
             }
         }
     }
+}
+
+function addVisualSunCell(x, y, baseEl) {
+    var cx = nodeX(x) + spacing / 2;
+    var cy = nodeY(y) + spacing / 2;
+
+    var iconEl = baseEl.clone()
+        .attr('x', cx - spacing / 8)
+        .attr('y', cy - spacing / 8)
+        .attr('width', spacing / 4)
+        .attr('height', spacing / 4)
+        .attr('rx', 0)
+        .attr('ry', 0)
+        .appendTo(gridEl);
+
+    var iconEl2 = iconEl.clone();
+    iconEl2.css('transform', 'translate(' + cx + 'px, ' + cy + 'px) rotate(45deg) translate(' + -cx + 'px, ' + -cy + 'px)');
+
+    iconEl.css('fill', getColorString(puzzle.cells[x][y].color));
+    iconEl2.css('fill', getColorString(puzzle.cells[x][y].color));
+
+    iconEl2.appendTo(gridEl);
 }
 
 function addVisualGridEdges(drawHighlighted) {

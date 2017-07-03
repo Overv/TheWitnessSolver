@@ -164,6 +164,46 @@ function checkSegregation(area) {
     return true;
 }
 
+function checkSuns(area) {
+
+    // Suns rule:
+    // If a sun of color X is in a region, there must be EXACTLY TWO items
+    // of color X in that region
+
+    var sunPresent = {};
+    var count = {};
+    for (var colorname in CELL_COLOR) {
+        value = CELL_COLOR[colorname];
+        sunPresent[value] = false;
+        count[value] = 0;
+    }
+
+    for (var c of area) {
+        if (puzzle.cells[c.x][c.y].type == CELL_TYPE.SUN) {
+            var colorVal = puzzle.cells[c.x][c.y].color;
+            sunPresent[colorVal] = true;
+        }
+    }
+
+    for (var c of area) {
+        if (puzzle.cells[c.x][c.y].type != CELL_TYPE.NONE) {
+            var colorVal = puzzle.cells[c.x][c.y].color;
+            count[colorVal] += 1;
+        }
+    }
+
+    for (var colorname in CELL_COLOR) {
+        value = CELL_COLOR[colorname];
+        if (sunPresent[value]) {
+            if (count[value] != 2) {
+                return false;
+            }
+        }
+    }
+
+    return true;
+}
+
 function checkTetrisArea(area) {
     var areaCells = 0;
     var tetrisBlocks = 0;
@@ -298,7 +338,8 @@ function checkLastArea(last, cur, areas, segment) {
 }
 
 function checkArea(area) {
-    return checkSegregation(area) &&
+    return checkSuns(area) &&
+           checkSegregation(area) &&
            checkTetrisArea(area) &&
            checkTetris(area);
 }

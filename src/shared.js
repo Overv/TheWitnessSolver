@@ -23,9 +23,10 @@ var CELL_TYPE = {
     'SQUARE': 1,
     'TETRIS': 2,
     'TETRIS_ROTATED': 3,
+    'SUN': 4,
 
     // Used in UI to loop around
-    'LAST': 3
+    'LAST': 4
 };
 
 var CELL_COLOR = {
