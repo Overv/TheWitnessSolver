@@ -20,14 +20,45 @@ var EDGE_TYPE = {
 
 var CELL_TYPE = {
     'NONE': 0,
-    'BLACK': 1,
-    'WHITE': 2,
-    'TETRIS': 3,
-    'TETRIS_ROTATED': 4,
+    'SQUARE': 1,
+    'TETRIS': 2,
+    'TETRIS_ROTATED': 3,
+    'SUN': 4,
+    'CANCELLATION': 5,
 
     // Used in UI to loop around
-    'LAST': 4
+    'LAST': 5
 };
+
+var CELL_COLOR = {
+    'BLACK': 0,
+    'WHITE': 1,
+    'CYAN': 2,
+    'MAGENTA': 3,
+    'YELLOW': 4,
+    'RED': 5,
+    'GREEN': 6,
+    'BLUE': 7,
+    'ORANGE': 8,
+
+    'LAST': 8
+};
+
+var CELL_COLOR_STRINGS = [
+    'black',
+    'white',
+    'cyan',
+    'magenta',
+    'yellow',
+    'red',
+    'green',
+    'blue',
+    'orange'
+];
+
+function getColorString(c) {
+    return CELL_COLOR_STRINGS[c];
+}
 
 // Helpers
 var ORIENTATION_TYPE = {
@@ -119,7 +150,7 @@ function initCells(puzzle) {
 
     for (var x = 0; x < puzzle.width - 1; x++) {
         for (var y = 0; y < puzzle.height - 1; y++) {
-            puzzle.cells[x][y] = {type: CELL_TYPE.NONE};
+            puzzle.cells[x][y] = {type: CELL_TYPE.NONE, color: CELL_COLOR.BLACK};
 
             initTetrisLayout(puzzle, x, y);
         }
@@ -166,4 +197,22 @@ function horEdgeExists(x, y) {
 function verEdgeExists(x, y) {
     if (x < 0 || y < 0 || x >= puzzle.width || y >= puzzle.height - 1) return false;
     return puzzle.verEdges[x][y] != EDGE_TYPE.OBSTACLE;
+}
+
+function powerSet(list) {
+    var set = [],
+        listSize = list.length,
+        combinationsCount = (1 << listSize),
+        combination;
+
+    for (var i = 0; i < combinationsCount ; i++ ){
+        var combination = [];
+        for (var j=0;j<listSize;j++){
+            if ((i & (1 << j))){
+                combination.push(list[j]);
+            }
+        }
+        set.push(combination);
+    }
+    return set;
 }
