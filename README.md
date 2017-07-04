@@ -7,6 +7,10 @@ interface for inputting puzzles similar to the panels in the game. It finds the
 simplest solution and displays it in the grid. You can also configure the solver
 to only show part of the solution if you just need a hint.
 
+You can try out the solver here:
+
+https://overv.github.io/TheWitnessSolver/
+
 # Algorithm
 
 Currently a very simple branch-and-bound algorithm is used that walks through
