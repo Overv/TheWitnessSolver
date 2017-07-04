@@ -7,8 +7,7 @@ interface for inputting puzzles similar to the panels in the game. It finds the
 simplest solution and displays it in the grid. You can also configure the solver
 to only show part of the solution if you just need a hint.
 
-Algorithm
----------
+# Algorithm
 
 Currently a very simple branch-and-bound algorithm is used that walks through
 all possible paths from each starting node and evaluates if the current path
@@ -54,29 +53,45 @@ of the time, which saves a lot of time.
 If an area that cannot be revisited already fails the segregation or tetris
 checks then there is no point going on.
 
-Rules
------
+# Rules
 
-The solver assumes the following rules considering the puzzle elements:
+This is a list of the mechanics as implemented by this solver:
 
-- Each node may only be visited once
-- The path must begin at one of the starting nodes and end at one of the exit
-nodes
-- Each node with a black hexagon must be visited
-- Each area enclosed by the path and the edge of the grid may not contain cells
-with both white and black squares
-- Enclosed areas must have the exact same area as the sum of areas of all tetris
-blocks contained within (may be `0`)
+##### Path
 
-There are also some rules that are not relevant to puzzles found in the original
-game, but are relevant to this solver's implementation:
+The path must be a self-avoiding walk starting at a start node and ending at an end node
 
-- White/black segregation cells are considered regular cells for solving the
-tetris block placement
-- Tetris block cells are considered uncolored cells for white/black segregation
+##### Hexagons
 
-To do
------
+Nodes or edges with a hexagon *must* be included in the path
 
-- Make tetris solver to handle irregular grids
-- Solve other puzzles
+##### Squares
+
+For every region R, all squares in R must share the same color.
+
+##### Suns / Stars
+
+For every region R, **if** a sun of color X in in R, **then** there must be **exactly two** elements of color X in R.
+
+##### Tetris Pieces
+
+For every region R, R must exactly accommodate all the tetris pieces represented in R.
+
+##### Hollow Squares
+
+For every region R, let H be the total number of hollow squares represented in the region (that is, groups just contribute their size, and the shape is ignored).
+**For some** choice of H individual tetris blocks, R must pass tetris validation (the step described above) when these pieces are removed, **but not if fewer** than H blocks are removed.
+
+##### Cancellation symbols
+
+For every region R, let K denote the number of cancellation symbols in R.
+**For some** choice of K (non-cancellation) elements from the region, validation must pass (that is, all the rules described above must pass) when these elements are removed, **but not if fewer** than K elements are removed.
+
+# Notable implementation discrepancies
+
+Here are some things that are different from the game:
+
+* Perhaps most importantly, Cancellation symbols will not respect hexagons -- they only consider entities in the interiors of cells.
+* Hollow tetris cubes are implemented *only* depending on the total amount of hollow blocks in a region, disregarding shape.
+For the vast majority of puzzles in the game, this is acceptable.
+It's not completely clear *how* respecting the shape of hollow squares would work, as there were very few puzzles in the game using this mechanic.

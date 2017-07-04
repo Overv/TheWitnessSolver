@@ -267,8 +267,8 @@ function checkArea(area) {
     // Cancellation rule:
     // Let N be the number of cell entities in the region
     // Let K be the number of cancellation icons in the region
-    // Validation must pass IF AND ONLY IF (N-K) objects other
-    // than the cancellation icons are removed from the region.
+    // Validation must pass if K objects other than the cancellation
+    // icons are removed from the region, but NOT if fewer are removed.
     // This is not computationally friendly, to say the least.
 
     var cancellationCount = countCancellations(area);
@@ -421,21 +421,22 @@ function checkSuns(area) {
 function checkTetrisArea(area) {
     var areaCells = 0;
     var tetrisBlocks = 0;
+    var hollowBlocks = 0;
 
     for (var c of area) {
-        if (c.ignore) continue;
         areaCells++;
+        if (c.ignore) continue;
 
         if (puzzle.cells[c.x][c.y].type == CELL_TYPE.TETRIS || puzzle.cells[c.x][c.y].type == CELL_TYPE.TETRIS_ROTATED) {
             tetrisBlocks += puzzle.cells[c.x][c.y].tetrisArea;
+        } else if (puzzle.cells[c.x][c.y].type == CELL_TYPE.TETRIS_HOLLOW) {
+            hollowBlocks += puzzle.cells[c.x][c.y].tetrisArea;
         }
     }
 
-    if (tetrisBlocks > 0 && tetrisBlocks != areaCells) {
-        return false;
-    } else {
-        return true;
-    }
+    return (tetrisBlocks == 0 && hollowBlocks == 0)
+        || (tetrisBlocks > 0 && (tetrisBlocks - hollowBlocks) == areaCells)
+        || (tetrisBlocks > 0 && (tetrisBlocks - hollowBlocks) == 0);
 }
 
 // Respects ignore flag
@@ -443,24 +444,92 @@ function checkTetris(area) {
     // For each area, try all possible positions of the tetris blocks contained
     // within and see if they fit (yes, solution verification is NP-complete!)
     var tetrisCells = [];
+    var totalTetrisBlocks = 0;
+    var totalHollowBlocks = 0;
 
     for (var cell of area) {
         if (cell.ignore) continue;
         if (puzzle.cells[cell.x][cell.y].type == CELL_TYPE.TETRIS || puzzle.cells[cell.x][cell.y].type == CELL_TYPE.TETRIS_ROTATED) {
+            totalTetrisBlocks += puzzle.cells[cell.x][cell.y].tetrisArea;
             tetrisCells.push(cell);
+        } else if (puzzle.cells[cell.x][cell.y].type == CELL_TYPE.TETRIS_HOLLOW) {
+            totalHollowBlocks += puzzle.cells[cell.x][cell.y].tetrisArea;
         }
     }
 
-    // Use first-fit decreasing style optimisation
-    tetrisCells.sort(function(a, b) {
+    var areaSort = function(a,b) {
         return puzzle.cells[b.x][b.y].tetrisArea - puzzle.cells[a.x][a.y].tetrisArea;
-    });
+    };
 
-    if (!findTetrisPlacement(area, tetrisCells)) {
-        return false;
-    } else {
+    // Use first-fit decreasing style optimisation
+    tetrisCells.sort(areaSort);
+
+    // No hollow squares; normal
+    if (totalHollowBlocks == 0) {
+        return findTetrisPlacement(area, tetrisCells);
+    }
+
+    // Othwerise, check for this first:
+    if (totalHollowBlocks == totalTetrisBlocks) {
         return true;
     }
+
+    // Otherwise, we need to do the whole nine yards:
+
+    var indexChoices = [];
+    for (var i = 0; i < tetrisCells.length; i ++) {
+        var cloc = tetrisCells[i];
+        var cell = puzzle.cells[cloc.x][cloc.y];
+        for (var xx = 0; xx < 4; xx ++) {
+            for (var yy = 0; yy < 4; yy ++) {
+                if (cell.tetris[xx][yy]) {
+                    // This is one we can turn off
+                    // The piece beloning to the tetris cell at (x,y), coordinates (xx, yy)
+                    indexChoices.push({x: cloc.x, y: cloc.y, xx: xx, yy: yy});
+                }
+            }
+        }
+    }
+
+    // Checking the area in checkTetrisArea ensures that removing fewer than totalHollowBlocks will not fit.
+    // So, we need only make sure that there is *a* choice of totalHollowBlocks tetris pieces to remove
+    // that find a successful fit.
+
+    var indexSets = powerSet(indexChoices);
+
+    var success = false;
+
+    var filterOutEntirelyMissingCells = function(cells) {
+        var ret = [];
+        for (var cloc of cells) {
+            if (!isEntireTetrisGridOff(cloc.x, cloc.y)) {
+                ret.push(cloc);
+            }
+        }
+        return ret;
+    }
+
+    for (var choice of indexSets) {
+        if (choice.length == totalHollowBlocks) {
+            // Toggle off as dicated by the choice
+            for (var c of choice) {
+                puzzle.cells[c.x][c.y].tetris[c.xx][c.yy] = false;
+                updateTetrisLayoutProperties(c.x, c.y);
+            }
+            // If we turned off ALL of an entire piece as part of this choice, remove it from consideration
+            var actualCells = filterOutEntirelyMissingCells(tetrisCells);
+            success = findTetrisPlacement(area, actualCells);
+            // Reset everything we toggled back on
+            for (var c of choice) {
+                puzzle.cells[c.x][c.y].tetris[c.xx][c.yy] = true;
+                updateTetrisLayoutProperties(c.x, c.y);
+            }
+            if (success) return true;
+        }
+    }
+
+    return false;
+
 }
 
 // returns x for [bounds] cropped tetris layout after rotation by [ang] degrees

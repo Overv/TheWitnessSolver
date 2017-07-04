@@ -146,7 +146,7 @@ function addVisualGridCells() {
 
             if (puzzle.cells[x][y].type == CELL_TYPE.SQUARE) {
                 addVisualSquareCell(x, y, baseEl);
-            } else if (puzzle.cells[x][y].type == CELL_TYPE.TETRIS || puzzle.cells[x][y].type == CELL_TYPE.TETRIS_ROTATED) {
+            } else if (puzzle.cells[x][y].type == CELL_TYPE.TETRIS || puzzle.cells[x][y].type == CELL_TYPE.TETRIS_ROTATED || puzzle.cells[x][y].type == CELL_TYPE.TETRIS_HOLLOW) {
                 addVisualGridTetrisCell(x, y, baseEl);
             } else if (puzzle.cells[x][y].type == CELL_TYPE.SUN) {
                 addVisualSunCell(x, y, baseEl);
@@ -193,6 +193,12 @@ function addVisualGridTetrisCell(x, y, baseEl) {
                 var cy = nodeY(y) + spacing / 2;
 
                 iconEl.css('transform', 'translate(' + cx + 'px, ' + cy + 'px) scale(0.8, 0.8) rotate(45deg) translate(' + -cx + 'px, ' + -cy + 'px)');
+            }
+
+            if (puzzle.cells[x][y].type == CELL_TYPE.TETRIS_HOLLOW) {
+                iconEl.css('fill', '#00E94F');
+                iconEl.attr('stroke', 'blue');
+                iconEl.attr('stroke-width', 4);
             }
         }
     }
