@@ -25,11 +25,13 @@ var CELL_TYPE = {
     'TETRIS_ROTATED': 3,
     'SUN': 4,
     'CANCELLATION': 5,
+    'TETRIS_HOLLOW': 6,
 
     // Used in UI to loop around
-    'LAST': 5
+    'LAST': 6
 };
 
+var BACKGROUND_COLOR = '#BBBBBB';
 var CELL_COLOR = {
     'BLACK': 0,
     'WHITE': 1,
@@ -197,6 +199,18 @@ function horEdgeExists(x, y) {
 function verEdgeExists(x, y) {
     if (x < 0 || y < 0 || x >= puzzle.width || y >= puzzle.height - 1) return false;
     return puzzle.verEdges[x][y] != EDGE_TYPE.OBSTACLE;
+}
+
+function isEntireTetrisGridOff(x, y) {
+    var tetris = puzzle.cells[x][y].tetris;
+    for (var xx = 0; xx < 4; xx ++) {
+        for (var yy = 0; yy < 4; yy ++) {
+            if (tetris[xx][yy]) {
+                return false;
+            }
+        }
+    }
+    return true;
 }
 
 function powerSet(list) {
