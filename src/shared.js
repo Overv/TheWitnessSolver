@@ -32,14 +32,18 @@ var CELL_TYPE = {
 };
 
 var BACKGROUND_COLOR = '#BBBBBB';
+var BLACK = 0;
+var WHITE = 1;
+var GREEN = 2;
+var PURPLE = 3;
 var CELL_COLOR = {
     'BLACK': 0,
     'WHITE': 1,
-    'CYAN': 2,
+    'GREEN': 2,
     'MAGENTA': 3,
     'YELLOW': 4,
     'RED': 5,
-    'GREEN': 6,
+    'CYAN': 6,
     'BLUE': 7,
     'ORANGE': 8,
 
@@ -49,11 +53,11 @@ var CELL_COLOR = {
 var CELL_COLOR_STRINGS = [
     'black',
     'white',
-    'cyan',
+    'green',
     'magenta',
     'yellow',
     'red',
-    'green',
+    'cyan',
     'blue',
     'orange'
 ];

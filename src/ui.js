@@ -450,6 +450,53 @@ function addGridEventHandlers() {
 
         updateVisualGrid();
     });
+    $('.cell').hover(function(){
+        $(this).toggleClass('hover');
+    })
+
+    $(document).keypress(function (e) {
+        if (viewingSolution) return;
+
+        var hoveredEl = $('.hover');
+        if (hoveredEl.length == 0) {
+            return;
+        }
+
+        var x = hoveredEl.attr('data-x');
+        var y = hoveredEl.attr('data-y');
+
+        var color;
+
+        switch (e.key) {
+            case '1':
+            case 'b':
+            case 'B':
+                color = BLACK;
+                break;
+            case '2':
+            case 'w':
+            case 'W':
+                color = WHITE;
+                break;
+            case '3':
+            case 'g':
+            case 'G':
+                color = GREEN;
+                break;
+            case '4':
+            case 'p':
+            case 'P':
+                color = PURPLE;
+                break;
+            default:
+                return
+        }
+
+        puzzle.cells[x][y].color = color;
+
+        updateVisualGrid();
+    })
+
     $('.cell').contextmenu(function (e) {
         if (viewingSolution) return;
 
