@@ -683,6 +683,20 @@ hintSizeSelector.change(function() {
     }
 });
 
+var puzzleTypeSelector = $('#puzzle-type-selector');
+for (var index in PUZZLE_TYPES) {
+    var el = $('<option value="' + index + '">' + index + '</option>')
+        .appendTo(puzzleTypeSelector);
+}
+puzzleTypeSelector.change(function() {
+    clearSolution();
+    initialize();
+    //updateVisualGrid();
+    var puzzle_type = this.value
+    SELECTED_PUZZLE_TYPE = puzzle_type
+    CELL_TYPE = PUZZLE_TYPES[puzzle_type];
+});
+
 function initialize() {
     // Sample puzzle from swamp area
     if (location.hash.length == 0 || !parseFromURL()) {

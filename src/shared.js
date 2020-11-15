@@ -1,4 +1,32 @@
+var SELECTED_PUZZLE_TYPE = "Squares";
+
 // Types
+var PUZZLE_TYPES = {
+    'Squares': {
+        'NONE': 0,
+        'SQUARE': 1,
+        // Used in UI to loop around
+        'LAST': 1
+    },
+    'Triangles': {
+        'NONE': 0,
+        'SUN': 1,
+        // Used in UI to loop around
+        'LAST': 1
+    },
+    'All': {
+        'NONE': 0,
+        'SQUARE': 1,
+        'TETRIS': 2,
+        'TETRIS_ROTATED': 3,
+        'SUN': 4,
+        'CANCELLATION': 5,
+        'TETRIS_HOLLOW': 6,
+        // Used in UI to loop around
+        'LAST': 6
+    }
+}
+
 var NODE_TYPE = {
     'NORMAL': 0,
     'START': 1,
@@ -18,18 +46,7 @@ var EDGE_TYPE = {
     'LAST': 2
 };
 
-var CELL_TYPE = {
-    'NONE': 0,
-    'SQUARE': 1,
-    'TETRIS': 2,
-    'TETRIS_ROTATED': 3,
-    'SUN': 4,
-    'CANCELLATION': 5,
-    'TETRIS_HOLLOW': 6,
-
-    // Used in UI to loop around
-    'LAST': 6
-};
+var CELL_TYPE = PUZZLE_TYPES['All'];
 
 var BACKGROUND_COLOR = '#BBBBBB';
 var BLACK = 0;
