@@ -1,39 +1,40 @@
 <!DOCTYPE html>
 <html>
-    <head>
-        <title>Witness Puzzle Solver</title>
 
-        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:400,300,100,500">
-        <link rel="stylesheet" href="style.css">
-    </head>
+<head>
+    <title>Witness Puzzle Solver</title>
 
-    <body>
-        <div id="container">
-            <h1>The Witness Puzzle Solver</h1>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:400,300,100,500">
+    <link rel="stylesheet" href="style.css">
+</head>
 
-            <h2>Click points, edges and squares to set up the puzzle. Tetris
-                blocks can be toggled with the right mouse button. The center of
-                a tetris block within a cell is not relevant.</h2>
+<body>
+    <div id="container">
+        <h1>The Witness Puzzle Solver (E+D)</h1>
 
-            <svg id="grid" width="800" height="800">
-            </svg>
+        <h2>Changing the input mode</h2>
 
-            <select id="grid-size-selector"></select>
+        <svg id="grid" width="800" height="800">
+        </svg>
 
-            <select id="hint-size-selector"></select>
+        <select id="grid-size-selector"></select>
 
-            <input id="solve-button" type="button" value="Solve" />
-            <input id="clear-button" type="button" value="Clear" />
-        </div>
+        <select id="hint-size-selector"></select>
 
-        <a href="https://github.com/Overv/TheWitnessSolver"><img style="position: absolute; top: 0; left: 0; border: 0;" src="https://camo.githubusercontent.com/82b228a3648bf44fc1163ef44c62fcc60081495e/68747470733a2f2f73332e616d617a6f6e6177732e636f6d2f6769746875622f726962626f6e732f666f726b6d655f6c6566745f7265645f6161303030302e706e67" alt="Fork me on GitHub" data-canonical-src="https://s3.amazonaws.com/github/ribbons/forkme_left_red_aa0000.png"></a>
+        <input id="solve-button" type="button" value="Solve" />
+        <input id="clear-button" type="button" value="Clear" />
+    </div>
 
-        <script src="https://code.jquery.com/jquery-2.2.0.min.js"></script>
-        <script src="src/shared.js"></script>
-        <script src="src/ui.js"></script>
-        <script src="src/solver.js"></script>
-        <script>
-            initialize();
-        </script>
-    </body>
+    <a href="https://github.com/Overv/TheWitnessSolver"><img style="position: absolute; top: 0; left: 0; border: 0;" src="https://camo.githubusercontent.com/82b228a3648bf44fc1163ef44c62fcc60081495e/68747470733a2f2f73332e616d617a6f6e6177732e636f6d2f6769746875622f726962626f6e732f666f726b6d655f6c6566745f7265645f6161303030302e706e67"
+            alt="Fork me on GitHub" data-canonical-src="https://s3.amazonaws.com/github/ribbons/forkme_left_red_aa0000.png"></a>
+
+    <script src="https://code.jquery.com/jquery-2.2.0.min.js"></script>
+    <script src="src/shared.js"></script>
+    <script src="src/ui.js"></script>
+    <script src="src/solver.js"></script>
+    <script>
+        initialize();
+    </script>
+</body>
+
 </html>

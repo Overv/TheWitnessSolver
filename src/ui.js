@@ -55,6 +55,8 @@ function bool2num(b) {
 // Update URL that allows people to link puzzles
 // These use the legacy format for compatibility
 function updateURL() {
+    return
+    /*
     var encoding = {
         gridWidth: puzzle.width,
         gridHeight: puzzle.height,
@@ -70,6 +72,7 @@ function updateURL() {
     encoding = btoa(JSON.stringify(encoding));
 
     location.hash = '#' + encoding;
+    */
 }
 
 function parseFromURL() {
@@ -585,6 +588,10 @@ function clearSolution() {
     updateVisualGrid();
 }
 
+function clearEverything() {
+
+}
+
 // Set up UI controls
 $('#solve-button').click(function() { solve(); });
 $('#clear-button').click(clearSolution);
@@ -634,30 +641,30 @@ function initialize() {
     if (location.hash.length == 0 || !parseFromURL()) {
         initPuzzle(puzzle, 5, 5);
 
-        puzzle.verEdges[2][1] = EDGE_TYPE.OBSTACLE;
+        // puzzle.verEdges[2][1] = EDGE_TYPE.OBSTACLE;
         puzzle.nodes[0][4].type = NODE_TYPE.START;
         puzzle.nodes[4][0].type = NODE_TYPE.EXIT;
-        puzzle.cells[0][1].type = CELL_TYPE.TETRIS;
-        puzzle.cells[1][3].type = CELL_TYPE.TETRIS;
-        puzzle.cells[2][3].type = CELL_TYPE.TETRIS;
-
-        for (var xx = 0; xx < 4; xx++) {
-            for (var yy = 0; yy < 4; yy++) {
-                puzzle.cells[0][1].tetris[xx][yy] = false;
-                puzzle.cells[1][3].tetris[xx][yy] = false;
-                puzzle.cells[2][3].tetris[xx][yy] = false;
-            }
-        }
-
-        for (var xx = 0; xx < 4; xx++) puzzle.cells[0][1].tetris[xx][0] = true;
-        for (var yy = 0; yy < 3; yy++) {
-            puzzle.cells[1][3].tetris[0][yy] = true;
-            puzzle.cells[2][3].tetris[0][yy] = true;
-        }
-
-        updateTetrisLayoutProperties(0, 1);
-        updateTetrisLayoutProperties(1, 3);
-        updateTetrisLayoutProperties(2, 3);
+        // puzzle.cells[0][1].type = CELL_TYPE.TETRIS;
+        // puzzle.cells[1][3].type = CELL_TYPE.TETRIS;
+        // puzzle.cells[2][3].type = CELL_TYPE.TETRIS;
+        //
+        // for (var xx = 0; xx < 4; xx++) {
+        //     for (var yy = 0; yy < 4; yy++) {
+        //         puzzle.cells[0][1].tetris[xx][yy] = false;
+        //         puzzle.cells[1][3].tetris[xx][yy] = false;
+        //         puzzle.cells[2][3].tetris[xx][yy] = false;
+        //     }
+        // }
+        //
+        // for (var xx = 0; xx < 4; xx++) puzzle.cells[0][1].tetris[xx][0] = true;
+        // for (var yy = 0; yy < 3; yy++) {
+        //     puzzle.cells[1][3].tetris[0][yy] = true;
+        //     puzzle.cells[2][3].tetris[0][yy] = true;
+        // }
+        //
+        // updateTetrisLayoutProperties(0, 1);
+        // updateTetrisLayoutProperties(1, 3);
+        // updateTetrisLayoutProperties(2, 3);
 
         updateVisualGrid();
     }
